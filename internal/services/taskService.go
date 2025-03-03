@@ -11,6 +11,7 @@ import (
 
 type TaskService interface {
 	CreateTask(taskDTo *models.CreateTaskDTO, firebaseUID string) (uuid.UUID, error)
+	GetTaskByID(uuid.UUID) (*models.TaskResponseDTO, error)
 }
 
 type taskService struct {
@@ -44,4 +45,9 @@ func (s *taskService) CreateTask(taskDTO *models.CreateTaskDTO, firebaseUID stri
 	taskDTO.UpdatedBy = projectMemberID
 
 	return s.taskRepository.CreateTask(taskDTO)
+}
+
+// TODO: Add verification so only the project members can access it
+func (s *taskService) GetTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO, error) {
+	return s.taskRepository.GetTaskByID(taskID)
 }

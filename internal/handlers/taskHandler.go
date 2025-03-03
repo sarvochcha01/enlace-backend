@@ -58,6 +58,24 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
+	taskID := chi.URLParam(r, "taskID")
 
+	parsedTaskID, err := uuid.Parse(taskID)
+
+	if err != nil {
+		log.Fatal("Invalid project ID (must be a valid UUID): ", err)
+		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
+		return
+	}
+
+	task, err := h.taskService.GetTaskByID(parsedTaskID)
+
+	if err != nil {
+		http.Error(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(task)
 }

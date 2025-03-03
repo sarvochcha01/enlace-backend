@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/google/uuid"
@@ -10,6 +11,7 @@ import (
 
 type TaskRepository interface {
 	CreateTask(*models.CreateTaskDTO) (uuid.UUID, error)
+	GetTaskByID(uuid.UUID) (*models.TaskResponseDTO, error)
 }
 
 type taskRepository struct {
@@ -41,4 +43,92 @@ func (r *taskRepository) CreateTask(taskDTO *models.CreateTaskDTO) (uuid.UUID, e
 
 	return taskID, nil
 
+}
+
+func (r *taskRepository) GetTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO, error) {
+	var task models.TaskResponseDTO
+	var assignedToID, assignedToUserID sql.NullString
+	var assignedToName, assignedToEmail, assignedToRole sql.NullString
+	var assignedToJoinedAt sql.NullString
+
+	queryString := `
+        SELECT t.id, t.project_id, t.task_number, t.title, t.description, t.status, t.priority, t.due_date, t.created_at, t.updated_at,
+               -- Created by details
+               cb_pm.id, cb_u.id, cb_u.name, cb_u.email, cb_pm.role, cb_pm.joined_at,
+               -- Updated by details
+               ub_pm.id, ub_u.id, ub_u.name, ub_u.email, ub_pm.role, ub_pm.joined_at,
+               -- Assigned to details (might be NULL)
+               at_pm.id, at_u.id, at_u.name, at_u.email, at_pm.role, at_pm.joined_at
+        FROM tasks t
+        LEFT JOIN project_members cb_pm ON t.created_by = cb_pm.id
+        LEFT JOIN users cb_u ON cb_pm.user_id = cb_u.id
+        LEFT JOIN project_members ub_pm ON t.updated_by = ub_pm.id
+        LEFT JOIN users ub_u ON ub_pm.user_id = ub_u.id
+        LEFT JOIN project_members at_pm ON t.assigned_to = at_pm.id
+        LEFT JOIN users at_u ON at_pm.user_id = at_u.id
+        WHERE t.id = $1
+    `
+
+	err := r.db.QueryRow(queryString, taskID).Scan(
+		&task.ID,
+		&task.ProjectId,
+		&task.TaskNumber,
+		&task.Title,
+		&task.Description,
+		&task.Status,
+		&task.Priority,
+		&task.DueDate,
+		&task.CreatedAt,
+		&task.UpdatedAt,
+		// Created by
+		&task.CreatedBy.ID,
+		&task.CreatedBy.UserID,
+		&task.CreatedBy.Name,
+		&task.CreatedBy.Email,
+		&task.CreatedBy.Role,
+		&task.CreatedBy.JoinedAt,
+		// Updated by
+		&task.UpdatedBy.ID,
+		&task.UpdatedBy.UserID,
+		&task.UpdatedBy.Name,
+		&task.UpdatedBy.Email,
+		&task.UpdatedBy.Role,
+		&task.UpdatedBy.JoinedAt,
+		// Assigned To
+		&assignedToID,
+		&assignedToUserID,
+		&assignedToName,
+		&assignedToEmail,
+		&assignedToRole,
+		&assignedToJoinedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("error fetching task: %w", err)
+	}
+
+	if assignedToID.Valid {
+		var assignedToUUID, assignedToUserUUID uuid.UUID
+
+		if err := assignedToUUID.Scan(assignedToID.String); err != nil {
+			return nil, fmt.Errorf("error converting assigned_to ID: %w", err)
+		}
+
+		if err := assignedToUserUUID.Scan(assignedToUserID.String); err != nil {
+			return nil, fmt.Errorf("error converting assigned_to user ID: %w", err)
+		}
+
+		task.AssignedTo = &models.ProjectMemberResponseDTO{
+			ID:       assignedToUUID,
+			UserID:   assignedToUserUUID,
+			Name:     assignedToName.String,
+			Email:    assignedToEmail.String,
+			Role:     models.ProjectRole(assignedToRole.String),
+			JoinedAt: assignedToJoinedAt.String,
+		}
+	} else {
+		task.AssignedTo = nil
+	}
+
+	return &task, nil
 }

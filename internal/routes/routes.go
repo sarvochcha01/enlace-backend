@@ -53,6 +53,8 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 					r.Post("/", taskHandler.CreateTask)
 
 					r.Route("/{taskID}", func(r chi.Router) {
+						r.Get("/", taskHandler.GetTaskByID)
+
 						r.Route("/comments", func(r chi.Router) {
 							r.Post("/", commentHandler.CreateComment)
 							r.Get("/", commentHandler.GetAllComments)
