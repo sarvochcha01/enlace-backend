@@ -44,10 +44,12 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 			r.Post("/", projectHandler.CreateProject)
 			r.Get("/", projectHandler.GetAllProjectsForUser)
 
+			// TODO: Should be handled by projectHandler, not projectMemberHandler
 			r.Post("/join/{projectID}", projectMemberHandler.CreateProjectMember)
 
 			r.Route("/{projectID}", func(r chi.Router) {
 				r.Get("/", projectHandler.GetProjectByID)
+				r.Get("/project-member", projectMemberHandler.GetProjectMemberID)
 
 				r.Route("/tasks", func(r chi.Router) {
 					r.Post("/", taskHandler.CreateTask)
@@ -55,6 +57,7 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 					r.Route("/{taskID}", func(r chi.Router) {
 						r.Get("/", taskHandler.GetTaskByID)
 						r.Put("/", taskHandler.EditTask)
+						r.Delete("/", taskHandler.DeleteTask)
 
 						r.Route("/comments", func(r chi.Router) {
 							r.Post("/", commentHandler.CreateComment)

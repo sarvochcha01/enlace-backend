@@ -13,6 +13,7 @@ type TaskService interface {
 	CreateTask(taskDTo *models.CreateTaskDTO, firebaseUID string) (uuid.UUID, error)
 	GetTaskByID(uuid.UUID) (*models.TaskResponseDTO, error)
 	EditTask(uuid.UUID, uuid.UUID, string, *models.UpdateTaskDTO) error
+	DeleteTask(*models.DeleteTaskDTO) error
 }
 
 type taskService struct {
@@ -68,4 +69,35 @@ func (s *taskService) EditTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUI
 	updateTaskDTO.UpdatedBy = projectMemberID
 
 	return s.taskRepository.EditTask(taskID, updateTaskDTO)
+}
+
+// TODO: Add logic so that the project owners and editors can delete it too
+func (s *taskService) DeleteTask(deleteTaskDTO *models.DeleteTaskDTO) error {
+
+	userID, err := s.userService.FindUserIDByFirebaseUID(deleteTaskDTO.FirebaseUID)
+	if err != nil {
+		log.Println("Failed to get UserID from firebaseUID")
+		return errors.New("failted to  get UserID from firebaseUID")
+	}
+
+	projectMemberID, err := s.projectMemberService.GetProjectMemberID(userID, deleteTaskDTO.ProjectID)
+	if err != nil {
+		log.Println("Failed to get project member id")
+		return errors.New("failed to get project member id")
+	}
+
+	var taskResponseDTO *models.TaskResponseDTO
+	taskResponseDTO, err = s.GetTaskByID(deleteTaskDTO.TaskID)
+	if err != nil {
+		log.Println("Failed to get task")
+		return errors.New("failed to get task")
+	}
+
+	if taskResponseDTO.CreatedBy.ID == projectMemberID {
+		return s.taskRepository.DeleteTask(deleteTaskDTO.TaskID)
+	} else {
+		log.Println("Not the creator of comment. failed to delete")
+		return errors.New("not the creator of comment. failed to delete")
+	}
+
 }

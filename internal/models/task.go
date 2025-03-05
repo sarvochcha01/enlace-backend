@@ -59,3 +59,9 @@ type UpdateTaskDTO struct {
 	Priority    TaskPriority `json:"priority"`
 	DueDate     *time.Time   `json:"dueDate,omitempty"`
 }
+
+type DeleteTaskDTO struct {
+	TaskID      uuid.UUID `json:"commentId"`
+	ProjectID   uuid.UUID `json:"projectId"`
+	FirebaseUID string    `json:"firebaseUID"`
+}

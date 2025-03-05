@@ -14,6 +14,7 @@ type ProjectMemberService interface {
 	CreateProjectMember(createProjectMemberDTO *models.CreateProjectMemberDTO, firebaseUID string) error
 	CreateProjectMemberTx(*sql.Tx, *models.CreateProjectMemberDTO) (uuid.UUID, error)
 	GetProjectMemberID(userID uuid.UUID, projectID uuid.UUID) (uuid.UUID, error)
+	GetProjectMemberIDByFirebaseUID(firebaseUID string, projectID uuid.UUID) (uuid.UUID, error)
 }
 
 type projectMemberService struct {
@@ -43,5 +44,16 @@ func (s *projectMemberService) CreateProjectMemberTx(tx *sql.Tx, createProjectMe
 }
 
 func (s *projectMemberService) GetProjectMemberID(userID uuid.UUID, projectID uuid.UUID) (uuid.UUID, error) {
+	return s.projectMemberRepository.GetProjectMemberID(userID, projectID)
+}
+
+func (s *projectMemberService) GetProjectMemberIDByFirebaseUID(firebaseUID string, projectID uuid.UUID) (uuid.UUID, error) {
+
+	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	if err != nil {
+		log.Println("Failed to get userID")
+		return uuid.Nil, errors.New("failed to get userID")
+	}
+
 	return s.projectMemberRepository.GetProjectMemberID(userID, projectID)
 }

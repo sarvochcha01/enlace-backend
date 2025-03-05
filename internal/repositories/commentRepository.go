@@ -76,18 +76,9 @@ func (r *commentRepository) DeleteComment(commentID uuid.UUID) error {
 		WHERE id = $1
 	`
 
-	result, err := r.db.Exec(queryString, commentID)
+	_, err := r.db.Exec(queryString, commentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete comment: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to retrieve affected rows: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("no comment found with the given ID")
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -54,4 +55,38 @@ func (h *ProjectMemberHandler) CreateProjectMember(w http.ResponseWriter, r *htt
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Project joined successfully"))
+}
+
+func (h *ProjectMemberHandler) GetProjectMemberID(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "projectID")
+
+	parsedProjectID, err := uuid.Parse(projectID)
+
+	if err != nil {
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
+		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
+		return
+	}
+
+	var user *auth.Token
+
+	user, err = middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized: ", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var projectMemberResponse struct {
+		ID uuid.UUID `json:"id"`
+	}
+
+	if projectMemberResponse.ID, err = h.projectMemberService.GetProjectMemberIDByFirebaseUID(user.UID, parsedProjectID); err != nil {
+		log.Println("Failed to get project member: ", err)
+		http.Error(w, "Failed to get project member", http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(projectMemberResponse)
 }

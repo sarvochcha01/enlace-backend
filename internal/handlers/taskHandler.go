@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -119,8 +118,6 @@ func (h *TaskHandler) EditTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(updateTaskDTO)
-
 	if err := h.taskService.EditTask(parsedTaskID, parsedProjectID, user.UID, &updateTaskDTO); err != nil {
 		log.Println("Failed to update task: ", err)
 		http.Error(w, "Failed to update task", http.StatusInternalServerError)
@@ -129,4 +126,48 @@ func (h *TaskHandler) EditTask(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Task updated successfully "))
+}
+
+func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	taskID := chi.URLParam(r, "taskID")
+	var deleteTaskDTO models.DeleteTaskDTO
+
+	parsedTaskID, err := uuid.Parse(taskID)
+
+	if err != nil {
+		log.Println("Invalid task ID (must be a valid UUID): ", err)
+		http.Error(w, "Invalid task ID (must be a valid UUID)", http.StatusBadRequest)
+		return
+	}
+	deleteTaskDTO.TaskID = parsedTaskID
+
+	projectID := chi.URLParam(r, "projectID")
+
+	parsedProjectID, err := uuid.Parse(projectID)
+
+	if err != nil {
+		log.Println("Invalid task ID (must be a valid UUID): ", err)
+		http.Error(w, "Invalid task ID (must be a valid UUID)", http.StatusBadRequest)
+		return
+	}
+	deleteTaskDTO.ProjectID = parsedProjectID
+
+	var user *auth.Token
+	user, err = middlewares.GetFirebaseUser(r)
+
+	if err != nil {
+		log.Println("Unauthorized: ", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	deleteTaskDTO.FirebaseUID = user.UID
+
+	if err := h.taskService.DeleteTask(&deleteTaskDTO); err != nil {
+		log.Println("Failed to delete task:", err)
+		http.Error(w, "Failed to delete task", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Task Deleted"))
 }

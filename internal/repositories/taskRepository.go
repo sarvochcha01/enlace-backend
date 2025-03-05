@@ -13,6 +13,7 @@ type TaskRepository interface {
 	CreateTask(*models.CreateTaskDTO) (uuid.UUID, error)
 	GetTaskByID(uuid.UUID) (*models.TaskResponseDTO, error)
 	EditTask(uuid.UUID, *models.UpdateTaskDTO) error
+	DeleteTask(uuid.UUID) error
 }
 
 type taskRepository struct {
@@ -150,4 +151,18 @@ func (r *taskRepository) EditTask(taskID uuid.UUID, updateTaskDTO *models.Update
 	_, err := r.db.Exec(queryString, updateTaskDTO.UpdatedBy, updateTaskDTO.AssignedTo, updateTaskDTO.Title, updateTaskDTO.Description, updateTaskDTO.Status, updateTaskDTO.Priority, updateTaskDTO.DueDate, taskID)
 
 	return err
+}
+
+func (r *taskRepository) DeleteTask(taskID uuid.UUID) error {
+	queryString := `
+		DELETE FROM tasks
+		WHERE id = $1
+	`
+
+	_, err := r.db.Exec(queryString, taskID)
+	if err != nil {
+		return fmt.Errorf("failed to delete task: %w", err)
+	}
+
+	return nil
 }
