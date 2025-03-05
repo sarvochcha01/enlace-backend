@@ -34,7 +34,7 @@ func (s *commentService) CreateComment(commentDTO *models.CreateCommentDTO, fire
 	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
 
 	if err != nil {
-		log.Fatal("UserID not found: ", err)
+		log.Println("UserID not found: ", err)
 		return errors.New("UserID not found: " + err.Error())
 	}
 
@@ -42,7 +42,7 @@ func (s *commentService) CreateComment(commentDTO *models.CreateCommentDTO, fire
 	projectMemberID, err = s.projectMemberService.GetProjectMemberID(userID, commentDTO.ProjectID)
 
 	if err != nil {
-		log.Fatal("Project Member not found: ", err)
+		log.Println("Project Member not found: ", err)
 		return errors.New("Project Member not found: " + err.Error())
 	}
 

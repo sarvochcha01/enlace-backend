@@ -12,6 +12,7 @@ import (
 type TaskRepository interface {
 	CreateTask(*models.CreateTaskDTO) (uuid.UUID, error)
 	GetTaskByID(uuid.UUID) (*models.TaskResponseDTO, error)
+	EditTask(uuid.UUID, *models.UpdateTaskDTO) error
 }
 
 type taskRepository struct {
@@ -37,7 +38,7 @@ func (r *taskRepository) CreateTask(taskDTO *models.CreateTaskDTO) (uuid.UUID, e
 	).Scan(&taskID)
 
 	if err != nil {
-		log.Fatal("Failed to insert task:", err)
+		log.Println("Failed to insert task:", err)
 		return uuid.Nil, err
 	}
 
@@ -131,4 +132,22 @@ func (r *taskRepository) GetTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO,
 	}
 
 	return &task, nil
+}
+
+func (r *taskRepository) EditTask(taskID uuid.UUID, updateTaskDTO *models.UpdateTaskDTO) error {
+	queryString := `
+	    UPDATE tasks
+	    SET updated_by = $1,
+	        assigned_to = $2,
+	        title = $3,
+	        description = $4,
+	        status = $5,
+	        priority = $6,
+	        due_date = $7
+	    WHERE id = $8
+	`
+
+	_, err := r.db.Exec(queryString, updateTaskDTO.UpdatedBy, updateTaskDTO.AssignedTo, updateTaskDTO.Title, updateTaskDTO.Description, updateTaskDTO.Status, updateTaskDTO.Priority, updateTaskDTO.DueDate, taskID)
+
+	return err
 }

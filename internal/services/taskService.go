@@ -12,6 +12,7 @@ import (
 type TaskService interface {
 	CreateTask(taskDTo *models.CreateTaskDTO, firebaseUID string) (uuid.UUID, error)
 	GetTaskByID(uuid.UUID) (*models.TaskResponseDTO, error)
+	EditTask(uuid.UUID, uuid.UUID, string, *models.UpdateTaskDTO) error
 }
 
 type taskService struct {
@@ -29,7 +30,7 @@ func (s *taskService) CreateTask(taskDTO *models.CreateTaskDTO, firebaseUID stri
 	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
 
 	if err != nil {
-		log.Fatal("UserID not found: ", err)
+		log.Println("UserID not found: ", err)
 		return uuid.Nil, errors.New("UserID not found: " + err.Error())
 	}
 
@@ -37,7 +38,7 @@ func (s *taskService) CreateTask(taskDTO *models.CreateTaskDTO, firebaseUID stri
 	projectMemberID, err = s.projectMemberService.GetProjectMemberID(userID, taskDTO.ProjectID)
 
 	if err != nil {
-		log.Fatal("Project Member not found: ", err)
+		log.Println("Project Member not found: ", err)
 		return uuid.Nil, errors.New("Project Member not found: " + err.Error())
 	}
 
@@ -50,4 +51,21 @@ func (s *taskService) CreateTask(taskDTO *models.CreateTaskDTO, firebaseUID stri
 // TODO: Add verification so only the project members can access it
 func (s *taskService) GetTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO, error) {
 	return s.taskRepository.GetTaskByID(taskID)
+}
+
+func (s *taskService) EditTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUID string, updateTaskDTO *models.UpdateTaskDTO) error {
+
+	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	projectMemberID, err := s.projectMemberService.GetProjectMemberID(userID, projectID)
+	if err != nil {
+		return errors.New("Project Member not found: " + err.Error())
+	}
+
+	updateTaskDTO.UpdatedBy = projectMemberID
+
+	return s.taskRepository.EditTask(taskID, updateTaskDTO)
 }

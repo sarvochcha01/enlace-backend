@@ -21,13 +21,13 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var userDTO models.CreateUserDTO
 
 	if err := json.NewDecoder(r.Body).Decode(&userDTO); err != nil {
-		log.Fatal("Invalid request body: ", err)
+		log.Println("Invalid request body: ", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.userService.CreateUser(&userDTO); err != nil {
-		log.Fatal("Failed to register user: ", err)
+		log.Println("Failed to register user: ", err)
 		http.Error(w, "Failed to register user", http.StatusInternalServerError)
 		return
 	}

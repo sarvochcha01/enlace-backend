@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
+	"firebase.google.com/go/auth"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/sarvochcha01/enlace-backend/internal/middlewares"
@@ -28,33 +30,32 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	taskDTO.ProjectID, err = uuid.Parse(projectID)
 	if err != nil {
-		log.Fatal("Invalid project ID (must be a valid UUID): ", err)
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
 		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
 		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&taskDTO); err != nil {
-		log.Fatal("Invalid request body: ", err)
+		log.Println("Invalid request body: ", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	user, err := middlewares.GetFirebaseUser(r)
 	if err != nil {
-		log.Fatal("Unauthorized: ", err)
+		log.Println("Unauthorized: ", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	var userID uuid.UUID
-	if userID, err = h.taskService.CreateTask(&taskDTO, user.UID); err != nil {
-		log.Fatal("Failed to create project: ", err)
-		http.Error(w, "Failed to create project", http.StatusInternalServerError)
+	if _, err = h.taskService.CreateTask(&taskDTO, user.UID); err != nil {
+		log.Println("Failed to create task: ", err)
+		http.Error(w, "Failed to create task", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Task created successfully with ID: " + userID.String()))
+	w.Write([]byte("Task created successfully "))
 
 }
 
@@ -64,8 +65,8 @@ func (h *TaskHandler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	parsedTaskID, err := uuid.Parse(taskID)
 
 	if err != nil {
-		log.Fatal("Invalid project ID (must be a valid UUID): ", err)
-		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
+		log.Println("Invalid task ID (must be a valid UUID): ", err)
+		http.Error(w, "Invalid task ID (must be a valid UUID)", http.StatusBadRequest)
 		return
 	}
 
@@ -78,4 +79,54 @@ func (h *TaskHandler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(task)
+}
+
+func (h *TaskHandler) EditTask(w http.ResponseWriter, r *http.Request) {
+	taskID := chi.URLParam(r, "taskID")
+
+	parsedTaskID, err := uuid.Parse(taskID)
+
+	if err != nil {
+		log.Println("Invalid task ID (must be a valid UUID): ", err)
+		http.Error(w, "Invalid task ID (must be a valid UUID)", http.StatusBadRequest)
+		return
+	}
+
+	projectID := chi.URLParam(r, "projectID")
+
+	parsedProjectID, err := uuid.Parse(projectID)
+
+	if err != nil {
+		log.Println("Invalid task ID (must be a valid UUID): ", err)
+		http.Error(w, "Invalid task ID (must be a valid UUID)", http.StatusBadRequest)
+		return
+	}
+
+	var user *auth.Token
+	user, err = middlewares.GetFirebaseUser(r)
+
+	if err != nil {
+		log.Println("Unauthorized: ", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var updateTaskDTO models.UpdateTaskDTO
+
+	if err := json.NewDecoder(r.Body).Decode(&updateTaskDTO); err != nil {
+		log.Println("Invalid request body: ", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println(updateTaskDTO)
+
+	if err := h.taskService.EditTask(parsedTaskID, parsedProjectID, user.UID, &updateTaskDTO); err != nil {
+		log.Println("Failed to update task: ", err)
+		http.Error(w, "Failed to update task", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Task updated successfully "))
 }

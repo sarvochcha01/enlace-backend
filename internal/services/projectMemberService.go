@@ -29,7 +29,7 @@ func (s *projectMemberService) CreateProjectMember(createProjectMemberDTO *model
 
 	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
-		log.Fatal("UserID not found: ", err)
+		log.Println("UserID not found: ", err)
 		return errors.New("UserID not found: " + err.Error())
 	}
 

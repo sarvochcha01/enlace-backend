@@ -29,7 +29,7 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 
 	CreateCommentDTO.ProjectID, err = uuid.Parse(projectID)
 	if err != nil {
-		log.Fatal("Invalid project ID (must be a valid UUID): ", err)
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
 		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
 		return
 	}
@@ -38,13 +38,13 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 
 	CreateCommentDTO.TaskID, err = uuid.Parse(taskID)
 	if err != nil {
-		log.Fatal("Invalid project ID (must be a valid UUID): ", err)
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
 		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
 		return
 	}
 
 	if err = json.NewDecoder(r.Body).Decode(&CreateCommentDTO); err != nil {
-		log.Fatal("Invalid request body: ", err)
+		log.Println("Invalid request body: ", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -53,13 +53,13 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	user, err = middlewares.GetFirebaseUser(r)
 
 	if err != nil {
-		log.Fatal("Unauthorized: ", err)
+		log.Println("Unauthorized: ", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	if err = h.commentService.CreateComment(&CreateCommentDTO, user.UID); err != nil {
-		log.Fatal("Failed to create comment: ", err)
+		log.Println("Failed to create comment: ", err)
 		http.Error(w, "Failed to create comment", http.StatusInternalServerError)
 		return
 	}
@@ -76,14 +76,14 @@ func (h *CommentHandler) GetComment(w http.ResponseWriter, r *http.Request) {
 	parsedCommentID, err := uuid.Parse(commentID)
 
 	if err != nil {
-		log.Fatal("Invalid project ID (must be a valid UUID): ", err)
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
 		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
 		return
 	}
 
 	_, err = middlewares.GetFirebaseUser(r)
 	if err != nil {
-		log.Fatal("Unauthorized: ", err)
+		log.Println("Unauthorized: ", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -146,7 +146,7 @@ func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "projectID")
 	deleteCommentDTO.ProjectID, err = uuid.Parse(projectID)
 	if err != nil {
-		log.Fatal("Invalid project ID (must be a valid UUID): ", err)
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
 		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
 		return
 	}

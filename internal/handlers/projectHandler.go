@@ -25,20 +25,20 @@ func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var projectDTO models.CreateProjectDTO
 
 	if err := json.NewDecoder(r.Body).Decode(&projectDTO); err != nil {
-		log.Fatal("Invalid request body: ", err)
+		log.Println("Invalid request body: ", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	user, err := middlewares.GetFirebaseUser(r)
 	if err != nil {
-		log.Fatal("Unauthorized: ", err)
+		log.Println("Unauthorized: ", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	if err := h.projectService.CreateProject(&projectDTO, user.UID); err != nil {
-		log.Fatal("Failed to create project: ", err)
+		log.Println("Failed to create project: ", err)
 		http.Error(w, "Failed to create project", http.StatusInternalServerError)
 		return
 	}
@@ -54,7 +54,7 @@ func (h *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) 
 	parsedProjectID, err := uuid.Parse(projectID)
 
 	if err != nil {
-		log.Fatal("Invalid project ID (must be a valid UUID): ", err)
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
 		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
 		return
 	}
@@ -77,7 +77,7 @@ func (h *ProjectHandler) GetAllProjectsForUser(w http.ResponseWriter, r *http.Re
 	user, err = middlewares.GetFirebaseUser(r)
 
 	if err != nil {
-		log.Fatal("Unauthorized: ", err)
+		log.Println("Unauthorized: ", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -85,7 +85,7 @@ func (h *ProjectHandler) GetAllProjectsForUser(w http.ResponseWriter, r *http.Re
 	var projectResponseDTO []models.ProjectResponseDTO
 
 	if projectResponseDTO, err = h.projectService.GetAllProjectsForUser(user.UID); err != nil {
-		log.Fatal("Failed to get Projects: ", err)
+		log.Println("Failed to get Projects: ", err)
 		http.Error(w, "Failed to get Projects", http.StatusInternalServerError)
 		return
 	}

@@ -32,7 +32,7 @@ func (s *projectService) CreateProject(projectDTO *models.CreateProjectDTO, fire
 	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
 
 	if err != nil {
-		log.Fatal("UserID not found: ", err)
+		log.Println("UserID not found: ", err)
 		return errors.New("UserID not found: " + err.Error())
 	}
 
@@ -86,7 +86,7 @@ func (s *projectService) GetAllProjectsForUser(firebaseUID string) ([]models.Pro
 	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
 
 	if err != nil {
-		log.Fatal("UserID not found: ", err)
+		log.Println("UserID not found: ", err)
 		return nil, errors.New("UserID not found: " + err.Error())
 	}
 
@@ -98,7 +98,7 @@ func (s *projectService) GetAllProjectsForUser(firebaseUID string) ([]models.Pro
 // 	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
 
 // 	if err != nil {
-// 		log.Fatal("UserID not found: ", err)
+// 		log.Println("UserID not found: ", err)
 // 		return errors.New("UserID not found: " + err.Error())
 // 	}
 

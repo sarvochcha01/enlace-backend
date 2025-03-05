@@ -30,7 +30,7 @@ func (h *ProjectMemberHandler) CreateProjectMember(w http.ResponseWriter, r *htt
 	parsedProjectID, err := uuid.Parse(projectID)
 
 	if err != nil {
-		log.Fatal("Invalid project ID (must be a valid UUID): ", err)
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
 		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
 		return
 	}
@@ -41,13 +41,13 @@ func (h *ProjectMemberHandler) CreateProjectMember(w http.ResponseWriter, r *htt
 	user, err = middlewares.GetFirebaseUser(r)
 
 	if err != nil {
-		log.Fatal("Unauthorized: ", err)
+		log.Println("Unauthorized: ", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	if err = h.projectMemberService.CreateProjectMember(&createProjectMemberDTO, user.UID); err != nil {
-		log.Fatal("Failed to join project: ", err)
+		log.Println("Failed to join project: ", err)
 		http.Error(w, "Failed to join project", http.StatusUnauthorized)
 		return
 	}
