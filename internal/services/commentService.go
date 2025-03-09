@@ -12,11 +12,11 @@ import (
 
 type CommentService interface {
 	CreateComment(*models.CreateCommentDTO, string) error
-	GetComment(uuid.UUID) (*models.CommentDTO, error)
+	GetComment(uuid.UUID) (*models.CommentResponseDTO, error)
 	UpdateComment(*models.UpdateCommentDTO, string) error
 	DeleteComment(*models.DeleteCommentDTO, string) error
 
-	// GetAllComments()
+	GetAllCommentsForTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUID string) ([]models.CommentResponseDTO, error)
 }
 
 type commentService struct {
@@ -51,7 +51,7 @@ func (s *commentService) CreateComment(commentDTO *models.CreateCommentDTO, fire
 	return s.commentRepository.CreateComment(commentDTO)
 }
 
-func (r *commentService) GetComment(commentID uuid.UUID) (*models.CommentDTO, error) {
+func (r *commentService) GetComment(commentID uuid.UUID) (*models.CommentResponseDTO, error) {
 	return r.commentRepository.GetComment(commentID)
 }
 
@@ -100,4 +100,16 @@ func (s *commentService) DeleteComment(deleteCommentDTO *models.DeleteCommentDTO
 	}
 
 	return s.commentRepository.DeleteComment(deleteCommentDTO.CommentID)
+}
+
+func (s *commentService) GetAllCommentsForTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUID string) ([]models.CommentResponseDTO, error) {
+
+	_, err := s.projectMemberService.GetProjectMemberIDByFirebaseUID(firebaseUID, projectID)
+
+	if err != nil {
+		log.Println("Failed to get Comments. Only projects members can access comments", err)
+		return nil, errors.New("Failed to get Comments. Only projects members can access comments")
+	}
+
+	return s.commentRepository.GetAllCommentsForTask(taskID)
 }

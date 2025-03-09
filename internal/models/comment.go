@@ -5,29 +5,29 @@ import (
 )
 
 type CreateCommentDTO struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	TaskID    uuid.UUID `json:"task_id"`
-	CreatedBy uuid.UUID `json:"created_by"`
+	ProjectID uuid.UUID `json:"projectId"`
+	TaskID    uuid.UUID `json:"taskId"`
+	CreatedBy uuid.UUID `json:"createdBy"`
 	Comment   string    `json:"comment"`
 }
 
-type CommentDTO struct {
+type CommentResponseDTO struct {
 	ID        uuid.UUID `json:"id"`
-	ProjectID uuid.UUID `json:"project_id"`
-	TaskID    uuid.UUID `json:"task_id"`
-	CreatedBy uuid.UUID `json:"created_by"`
+	ProjectID uuid.UUID `json:"projectId"`
+	TaskID    uuid.UUID `json:"taskId"`
+	CreatedBy uuid.UUID `json:"createdBy"`
 	Comment   string    `json:"comment"`
-	CreatedAt string    `json:"created_at"`
-	UpdatedAt string    `json:"updated_at"`
+	CreatedAt string    `json:"createdAt"`
+	UpdatedAt string    `json:"updatedAt"`
 }
 
 type UpdateCommentDTO struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	CommentID uuid.UUID `json:"comment_id"`
+	ProjectID uuid.UUID `json:"projectId"`
+	CommentID uuid.UUID `json:"commentId"`
 	Comment   string    `json:"comment"`
 }
 
 type DeleteCommentDTO struct {
-	ProjectID uuid.UUID `json:"project_id"`
-	CommentID uuid.UUID `json:"comment_id"`
+	ProjectID uuid.UUID `json:"projectId"`
+	CommentID uuid.UUID `json:"commentId"`
 }

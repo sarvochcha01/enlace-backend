@@ -37,6 +37,7 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 	r.Route("/api/v1", func(api chi.Router) {
 		api.Route("/users", func(r chi.Router) {
 			r.Post("/create", userHandler.CreateUser)
+			r.With(authMiddleware.FirebaseAuthMiddleware).Get("/", userHandler.GetUser)
 		})
 
 		api.Route("/projects", func(r chi.Router) {
@@ -61,7 +62,7 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 
 						r.Route("/comments", func(r chi.Router) {
 							r.Post("/", commentHandler.CreateComment)
-							r.Get("/", commentHandler.GetAllComments)
+							r.Get("/", commentHandler.GetAllCommentsForTask)
 							r.Put("/{commentID}", commentHandler.EditComment)
 							r.Get("/{commentID}", commentHandler.GetComment)
 							r.Delete("/{commentID}", commentHandler.DeleteComment)

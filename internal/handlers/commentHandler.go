@@ -174,6 +174,40 @@ func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Comment deleted successfully"))
 }
 
-func (h *CommentHandler) GetAllComments(w http.ResponseWriter, r *http.Request) {
+func (h *CommentHandler) GetAllCommentsForTask(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "projectID")
+
+	parsedProjectID, err := uuid.Parse(projectID)
+	if err != nil {
+		log.Println("Invlaid project id: ", err)
+		http.Error(w, "Invalid project id", http.StatusBadRequest)
+		return
+	}
+
+	taskID := chi.URLParam(r, "taskID")
+	parsedTaskID, err := uuid.Parse(taskID)
+	if err != nil {
+		log.Println("Invlaid task id: ", err)
+		http.Error(w, "Invalid task id", http.StatusBadRequest)
+		return
+	}
+
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized: ", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var commentResponseDTO []models.CommentResponseDTO
+
+	if commentResponseDTO, err = h.commentService.GetAllCommentsForTask(parsedTaskID, parsedProjectID, user.UID); err != nil {
+		log.Println("Failed to get Comments: ", err)
+		http.Error(w, "Failed to get Comments", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(commentResponseDTO)
 
 }

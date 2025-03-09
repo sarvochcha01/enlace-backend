@@ -9,6 +9,7 @@ import (
 type UserService interface {
 	CreateUser(*models.CreateUserDTO) error
 	FindUserIDByFirebaseUID(string) (uuid.UUID, error)
+	GetUserByFirebaseUID(string) (*models.UserResponseDTO, error)
 }
 
 type userService struct {
@@ -25,4 +26,9 @@ func (s *userService) CreateUser(userDTO *models.CreateUserDTO) error {
 
 func (s *userService) FindUserIDByFirebaseUID(firebaseUID string) (uuid.UUID, error) {
 	return s.userRepository.FindUserIDByFirebaseUID(firebaseUID)
+}
+
+func (s *userService) GetUserByFirebaseUID(firebaseUID string) (*models.UserResponseDTO, error) {
+
+	return s.userRepository.GetUserByFirebaseUID(firebaseUID)
 }

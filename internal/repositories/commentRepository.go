@@ -10,11 +10,11 @@ import (
 
 type CommentRepository interface {
 	CreateComment(*models.CreateCommentDTO) error
-	GetComment(uuid.UUID) (*models.CommentDTO, error)
+	GetComment(uuid.UUID) (*models.CommentResponseDTO, error)
 	UpdateComment(uuid.UUID, string) error
 	DeleteComment(uuid.UUID) error
 
-	GetAllComments(uuid.UUID) ([]models.CommentDTO, error)
+	GetAllCommentsForTask(uuid.UUID) ([]models.CommentResponseDTO, error)
 
 	GetCommentCreator(uuid.UUID) (uuid.UUID, error)
 }
@@ -43,8 +43,8 @@ func (r *commentRepository) CreateComment(commentDTO *models.CreateCommentDTO) e
 	return nil
 }
 
-func (r *commentRepository) GetComment(commentID uuid.UUID) (*models.CommentDTO, error) {
-	var commentDTO models.CommentDTO
+func (r *commentRepository) GetComment(commentID uuid.UUID) (*models.CommentResponseDTO, error) {
+	var commentDTO models.CommentResponseDTO
 
 	queryString := `
 		SELECT id, project_id, task_id, created_by, comment, created_at, updated_at
@@ -93,8 +93,8 @@ func (r *commentRepository) GetCommentCreator(commentID uuid.UUID) (uuid.UUID, e
 	return creatorID, nil
 }
 
-func (r *commentRepository) GetAllComments(taskID uuid.UUID) ([]models.CommentDTO, error) {
-	var comments []models.CommentDTO
+func (r *commentRepository) GetAllCommentsForTask(taskID uuid.UUID) ([]models.CommentResponseDTO, error) {
+	comments := []models.CommentResponseDTO{}
 
 	queryString := `
 		SELECT id, project_id, task_id, created_by, comment, created_at, updated_at
@@ -102,24 +102,24 @@ func (r *commentRepository) GetAllComments(taskID uuid.UUID) ([]models.CommentDT
 		WHERE task_id = $1
 	`
 
-	rows, err := r.db.Query(queryString)
+	rows, err := r.db.Query(queryString, taskID)
 	if err != nil {
-		return nil, err
+		return comments, err
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
-		var comment models.CommentDTO
+		var comment models.CommentResponseDTO
 		if err := rows.Scan(&comment.ID, &comment.ProjectID, &comment.TaskID, &comment.CreatedBy, &comment.Comment, &comment.CreatedAt, &comment.UpdatedAt); err != nil {
-			return nil, err
+			return comments, err
 		}
 
 		comments = append(comments, comment)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return comments, err
 	}
 
 	return comments, nil
