@@ -90,3 +90,49 @@ func (h *ProjectMemberHandler) GetProjectMemberID(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(projectMemberResponse)
 }
+
+func (h *ProjectMemberHandler) UpdateProjectMember(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "projectID")
+
+	parsedProjectID, err := uuid.Parse(projectID)
+	if err != nil {
+		log.Println("Invalid project id:", err)
+		http.Error(w, "invalid project id", http.StatusBadRequest)
+		return
+	}
+
+	projectMemberID := chi.URLParam(r, "projectMemberID")
+	parsedProjectMemberID, err := uuid.Parse(projectMemberID)
+	if err != nil {
+		log.Println("Invalid member id:", err)
+		http.Error(w, "invalid member id", http.StatusBadRequest)
+		return
+	}
+
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized:", err)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var updateProjectMemberDTO models.UpdateProjectMemberDTO
+	if err = json.NewDecoder(r.Body).Decode(&updateProjectMemberDTO); err != nil {
+		log.Println("Invalid request body: ", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	updateProjectMemberDTO.ID = parsedProjectMemberID
+	updateProjectMemberDTO.ProjectID = parsedProjectID
+
+	if err = h.projectMemberService.UpdateProjectMemberRole(user.UID, &updateProjectMemberDTO); err != nil {
+		log.Println("Failed to update project member role:", err)
+		http.Error(w, "failed to update project member role:", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Project member role updated successfully"))
+
+}

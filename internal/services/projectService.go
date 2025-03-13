@@ -9,18 +9,21 @@ import (
 	"github.com/google/uuid"
 	"github.com/sarvochcha01/enlace-backend/internal/models"
 	"github.com/sarvochcha01/enlace-backend/internal/repositories"
+	"github.com/sarvochcha01/enlace-backend/internal/utils"
 )
 
 type ProjectService interface {
 	CreateProject(projectDTO *models.CreateProjectDTO, firebaseUID string) error
 	GetProjectByID(uuid.UUID, string) (*models.ProjectResponseDTO, error)
 	GetAllProjectsForUser(firebaseUID string) ([]models.ProjectResponseDTO, error)
-	UpdateProject(firebaseUID string, projectID uuid.UUID, projectDTO *models.UpdateProjectDTO) error
+	EditProject(firebaseUID string, projectID uuid.UUID, projectDTO *models.EditProjectDTO) error
+	DeleteProject(firebaseUID string, projectID uuid.UUID) error
 
 	GetProjectName(projectID uuid.UUID) (string, error)
 
 	LeaveProject(projectID uuid.UUID, firebaseUID string) error
 	JoinProject(projectID uuid.UUID, firebaseUID string) error
+	GetProjectCreatorID(projectID uuid.UUID) (uuid.UUID, error)
 	// JoinProject(firebaseUID string, projectID uuid.UUID) error
 }
 
@@ -90,13 +93,13 @@ func (s *projectService) GetProjectByID(projectID uuid.UUID, firebaseUID string)
 		return nil, errors.New("UserID not found: " + err.Error())
 	}
 
-	projectMember, err := s.projectMemberService.GetProjectMember(userID, projectID)
+	projectMember, err := s.projectMemberService.GetProjectMemberByUserID(userID, projectID)
 	if err != nil {
 		log.Println("Not a project member: ", err)
 		return nil, errors.New("not a project member: " + err.Error())
 	}
 
-	if projectMember.Status == string(models.StatusInactive) {
+	if projectMember.Status == models.StatusInactive {
 		log.Println("Project member is inactive")
 		return nil, errors.New("project member is inactive")
 	}
@@ -120,7 +123,26 @@ func (s *projectService) GetProjectName(projectID uuid.UUID) (string, error) {
 	return s.projectRepository.GetProjectName(projectID)
 }
 
-func (s *projectService) UpdateProject(firebaseUID string, projectID uuid.UUID, projectDTO *models.UpdateProjectDTO) error {
+func (s *projectService) GetProjectCreatorID(projectID uuid.UUID) (uuid.UUID, error) {
+	return s.projectRepository.GetProjectCreatorID(projectID)
+}
+
+func (s *projectService) DeleteProject(firebaseUID string, projectID uuid.UUID) error {
+
+	projectMember, err := s.projectMemberService.GetProjectMemberByFirebaseUID(firebaseUID, projectID)
+	if err != nil {
+		return err
+	}
+
+	if !utils.HasDeletePrivilege(projectMember) {
+		return errors.New("only owners an delete the project")
+	}
+
+	return s.projectRepository.DeleteProject(projectID)
+}
+
+// TODO: Only owner and editor should be able to edit the project
+func (s *projectService) EditProject(firebaseUID string, projectID uuid.UUID, projectDTO *models.EditProjectDTO) error {
 	return s.projectRepository.EditProject(projectID, projectDTO)
 }
 
@@ -131,7 +153,7 @@ func (s *projectService) JoinProject(projectID uuid.UUID, firebaseUID string) er
 		return err
 	}
 
-	projectMember, err := s.projectMemberService.GetProjectMember(userID, projectID)
+	projectMember, err := s.projectMemberService.GetProjectMemberByUserID(userID, projectID)
 	if err != nil {
 
 		if errors.Is(err, sql.ErrNoRows) {
@@ -146,7 +168,7 @@ func (s *projectService) JoinProject(projectID uuid.UUID, firebaseUID string) er
 
 	}
 
-	if projectMember.Status == string(models.StatusActive) {
+	if projectMember.Status == models.StatusActive {
 		return errors.New("already an active project member")
 	}
 

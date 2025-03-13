@@ -11,10 +11,12 @@ type ProjectRepository interface {
 	BeginTransaction() (*sql.Tx, error)
 	CreateProject(*sql.Tx, *models.CreateProjectDTO) (uuid.UUID, error)
 	GetAllProjectsForUser(uuid.UUID) ([]models.ProjectResponseDTO, error)
-	EditProject(uuid.UUID, *models.UpdateProjectDTO) error
+	EditProject(uuid.UUID, *models.EditProjectDTO) error
+	DeleteProject(projectID uuid.UUID) error
 
 	GetProjectByID(uuid.UUID) (*models.ProjectResponseDTO, error)
 	GetProjectName(uuid.UUID) (string, error)
+	GetProjectCreatorID(projectID uuid.UUID) (uuid.UUID, error)
 	// JoinProject(userID uuid.UUID, projectID uuid.UUID) error
 }
 
@@ -275,6 +277,15 @@ func (r *projectRepository) GetAllProjectsForUser(userID uuid.UUID) ([]models.Pr
 	return projects, nil
 }
 
+func (r *projectRepository) DeleteProject(projectID uuid.UUID) error {
+	querystring := `
+		DELETE FROM projects WHERE id = $1
+	`
+	_, err := r.db.Exec(querystring, projectID)
+
+	return err
+}
+
 func (r *projectRepository) GetProjectName(projectID uuid.UUID) (string, error) {
 	queryString := `
 		SELECT name FROM projects WHERE id = $1
@@ -289,7 +300,23 @@ func (r *projectRepository) GetProjectName(projectID uuid.UUID) (string, error) 
 	return name, nil
 }
 
-func (r *projectRepository) EditProject(projectID uuid.UUID, projectDTO *models.UpdateProjectDTO) error {
+func (r *projectRepository) GetProjectCreatorID(projectID uuid.UUID) (uuid.UUID, error) {
+
+	var creatorID uuid.UUID
+	queryString := `
+		SELECT created_by
+		FROM projects
+		WHERE id = $1
+	`
+
+	if err := r.db.QueryRow(queryString, projectID).Scan(&creatorID); err != nil {
+		return uuid.Nil, err
+	}
+
+	return creatorID, nil
+}
+
+func (r *projectRepository) EditProject(projectID uuid.UUID, projectDTO *models.EditProjectDTO) error {
 	queryString := `
 		UPDATE projects
 		SET name = $1,

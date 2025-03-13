@@ -55,8 +55,16 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 			r.Route("/{projectID}", func(r chi.Router) {
 				r.Get("/", projectHandler.GetProjectByID)
 				r.Put("/", projectHandler.UpdateProject)
+				r.Delete("/", projectHandler.DeleteProject)
 
-				r.Get("/project-member", projectMemberHandler.GetProjectMemberID)
+				r.Route("/project-members", func(r chi.Router) {
+					// r.Get("/", projectMemberHandler.GetAllProjectMembers)
+					r.Route("/{projectMemberID}", func(r chi.Router) {
+						// r.Get("/", projectMemberHandler.GetProjectMember)
+						r.Put("/", projectMemberHandler.UpdateProjectMember)
+						// r.Delete("/", projectMemberHandler.DeleteProjectMember)
+					})
+				})
 
 				r.Get("/join", projectHandler.GetProjectName)
 				// TODO: Group join and leave, as well as updating the member roles (to be added) owner, editor, viewer into one handler func, such as projectHandler.UpdateMember or something

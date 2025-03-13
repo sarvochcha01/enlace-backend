@@ -23,12 +23,18 @@ type CreateProjectMemberDTO struct {
 }
 
 type ProjectMemberResponseDTO struct {
+	ID        uuid.UUID           `json:"id"`
+	UserID    uuid.UUID           `json:"userId"`
+	ProjectID uuid.UUID           `json:"projectId"`
+	Name      string              `json:"name"`
+	Email     string              `json:"email"`
+	Status    ProjectMemberStatus `json:"status"`
+	Role      ProjectMemberRole   `json:"role"`
+	JoinedAt  string              `json:"joinedAt"`
+}
+
+type UpdateProjectMemberDTO struct {
 	ID        uuid.UUID         `json:"id"`
-	UserID    uuid.UUID         `json:"userId"`
 	ProjectID uuid.UUID         `json:"projectId"`
-	Name      string            `json:"name"`
-	Email     string            `json:"email"`
-	Status    string            `json:"status"`
 	Role      ProjectMemberRole `json:"role"`
-	JoinedAt  string            `json:"joinedAt"`
 }

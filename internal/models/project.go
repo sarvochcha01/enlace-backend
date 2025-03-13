@@ -23,7 +23,7 @@ type ProjectResponseDTO struct {
 	UpdatedAt      string                     `json:"updatedAt"`
 }
 
-type UpdateProjectDTO struct {
+type EditProjectDTO struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }

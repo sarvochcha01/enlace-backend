@@ -155,14 +155,14 @@ func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var updateProjectDTO models.UpdateProjectDTO
+	var updateProjectDTO models.EditProjectDTO
 	if err = json.NewDecoder(r.Body).Decode(&updateProjectDTO); err != nil {
 		log.Println("Invalid request body: ", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if err = h.projectService.UpdateProject(user.UID, parsedProjectID, &updateProjectDTO); err != nil {
+	if err = h.projectService.EditProject(user.UID, parsedProjectID, &updateProjectDTO); err != nil {
 		log.Println("Failed to create project: ", err)
 		http.Error(w, "Failed to create project", http.StatusInternalServerError)
 		return
@@ -171,6 +171,33 @@ func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Project updated successfully"))
 
+}
+
+func (h *ProjectHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "projectID")
+	parsedProjectID, err := uuid.Parse(projectID)
+	if err != nil {
+		log.Println("Invalid project id:", err)
+		http.Error(w, "Invalid project id", http.StatusBadRequest)
+		return
+	}
+
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized: ", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = h.projectService.DeleteProject(user.UID, parsedProjectID)
+	if err != nil {
+		log.Println("Failed to delete project:", err)
+		http.Error(w, "failed to delete project", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Project Deleted"))
 }
 
 func (h *ProjectHandler) JoinProject(w http.ResponseWriter, r *http.Request) {

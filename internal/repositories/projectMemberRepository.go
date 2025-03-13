@@ -11,8 +11,10 @@ type ProjectMemberRepository interface {
 	CreateProjectMember(*models.CreateProjectMemberDTO) error
 	CreateProjectMemberTx(*sql.Tx, *models.CreateProjectMemberDTO) (uuid.UUID, error)
 	GetProjectMemberID(uuid.UUID, uuid.UUID) (uuid.UUID, error)
+	GetProjectMember(uuid.UUID) (*models.ProjectMemberResponseDTO, error)
 	UpdateProjectMemberStatus(uuid.UUID, models.ProjectMemberStatus) error
-	GetProjectMember(userID uuid.UUID, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error)
+	UpdateProjectMemberRole(projectMemberID uuid.UUID, newRole models.ProjectMemberRole) error
+	GetProjectMemberByUserID(userID uuid.UUID, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error)
 }
 
 type projectMemberRepository struct {
@@ -53,7 +55,7 @@ func (r *projectMemberRepository) CreateProjectMemberTx(tx *sql.Tx, projectMembe
 	return newID, nil
 }
 
-func (r *projectMemberRepository) GetProjectMember(userID uuid.UUID, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error) {
+func (r *projectMemberRepository) GetProjectMemberByUserID(userID uuid.UUID, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error) {
 
 	var projectMember models.ProjectMemberResponseDTO
 
@@ -64,6 +66,31 @@ func (r *projectMemberRepository) GetProjectMember(userID uuid.UUID, projectID u
 	`
 
 	err := r.db.QueryRow(queryString, userID, projectID).Scan(
+		&projectMember.ID,
+		&projectMember.UserID,
+		&projectMember.ProjectID,
+		&projectMember.Role,
+		&projectMember.JoinedAt,
+		&projectMember.Status)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &projectMember, nil
+}
+
+func (r *projectMemberRepository) GetProjectMember(projectMemberID uuid.UUID) (*models.ProjectMemberResponseDTO, error) {
+
+	var projectMember models.ProjectMemberResponseDTO
+
+	queryString := `
+		SELECT id, user_id, project_id, role, joined_at, status
+		FROM project_members
+		WHERE id = $1
+	`
+
+	err := r.db.QueryRow(queryString, projectMemberID).Scan(
 		&projectMember.ID,
 		&projectMember.UserID,
 		&projectMember.ProjectID,
@@ -105,6 +132,22 @@ func (r *projectMemberRepository) UpdateProjectMemberStatus(projectMemberID uuid
 	`
 
 	_, err := r.db.Exec(queryString, newStatus, projectMemberID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *projectMemberRepository) UpdateProjectMemberRole(projectMemberID uuid.UUID, newRole models.ProjectMemberRole) error {
+
+	queryString := `
+		UPDATE project_members
+		SET role = $1
+		WHERE id = $2
+	`
+
+	_, err := r.db.Exec(queryString, newRole, projectMemberID)
 	if err != nil {
 		return err
 	}
