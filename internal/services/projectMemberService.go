@@ -15,6 +15,9 @@ type ProjectMemberService interface {
 	CreateProjectMemberTx(*sql.Tx, *models.CreateProjectMemberDTO) (uuid.UUID, error)
 	GetProjectMemberID(userID uuid.UUID, projectID uuid.UUID) (uuid.UUID, error)
 	GetProjectMemberIDByFirebaseUID(firebaseUID string, projectID uuid.UUID) (uuid.UUID, error)
+	GetProjectMember(userID uuid.UUID, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error)
+
+	UpdateProjectMemberStatus(projectMemberID uuid.UUID, newStatus models.ProjectMemberStatus) error
 }
 
 type projectMemberService struct {
@@ -43,6 +46,10 @@ func (s *projectMemberService) CreateProjectMemberTx(tx *sql.Tx, createProjectMe
 	return s.projectMemberRepository.CreateProjectMemberTx(tx, createProjectMemberDTO)
 }
 
+func (s *projectMemberService) GetProjectMember(userID uuid.UUID, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error) {
+	return s.projectMemberRepository.GetProjectMember(userID, projectID)
+}
+
 func (s *projectMemberService) GetProjectMemberID(userID uuid.UUID, projectID uuid.UUID) (uuid.UUID, error) {
 	return s.projectMemberRepository.GetProjectMemberID(userID, projectID)
 }
@@ -56,4 +63,8 @@ func (s *projectMemberService) GetProjectMemberIDByFirebaseUID(firebaseUID strin
 	}
 
 	return s.projectMemberRepository.GetProjectMemberID(userID, projectID)
+}
+
+func (s *projectMemberService) UpdateProjectMemberStatus(projectMemberID uuid.UUID, newStatus models.ProjectMemberStatus) error {
+	return s.projectMemberRepository.UpdateProjectMemberStatus(projectMemberID, newStatus)
 }

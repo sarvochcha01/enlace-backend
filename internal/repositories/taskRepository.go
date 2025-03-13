@@ -125,7 +125,7 @@ func (r *taskRepository) GetTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO,
 			UserID:   assignedToUserUUID,
 			Name:     assignedToName.String,
 			Email:    assignedToEmail.String,
-			Role:     models.ProjectRole(assignedToRole.String),
+			Role:     models.ProjectMemberRole(assignedToRole.String),
 			JoinedAt: assignedToJoinedAt.String,
 		}
 	} else {

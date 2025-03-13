@@ -24,7 +24,7 @@ func NewProjectMemberHandler(pms services.ProjectMemberService) *ProjectMemberHa
 func (h *ProjectMemberHandler) CreateProjectMember(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var createProjectMemberDTO models.CreateProjectMemberDTO
-	createProjectMemberDTO.Role = models.Viewer
+	createProjectMemberDTO.Role = models.RoleViewer
 
 	projectID := chi.URLParam(r, "projectID")
 

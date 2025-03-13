@@ -11,8 +11,10 @@ type ProjectRepository interface {
 	BeginTransaction() (*sql.Tx, error)
 	CreateProject(*sql.Tx, *models.CreateProjectDTO) (uuid.UUID, error)
 	GetAllProjectsForUser(uuid.UUID) ([]models.ProjectResponseDTO, error)
+	EditProject(uuid.UUID, *models.UpdateProjectDTO) error
 
 	GetProjectByID(uuid.UUID) (*models.ProjectResponseDTO, error)
+	GetProjectName(uuid.UUID) (string, error)
 	// JoinProject(userID uuid.UUID, projectID uuid.UUID) error
 }
 
@@ -74,6 +76,7 @@ func (r *projectRepository) GetProjectByID(projectID uuid.UUID) (*models.Project
         FROM project_members pm
         JOIN users u ON pm.user_id = u.id
         WHERE pm.project_id = $1
+		AND pm.status = 'active'
     `
 	rows, err := r.db.Query(membersQuery, projectID)
 	if err != nil {
@@ -104,7 +107,7 @@ func (r *projectRepository) GetProjectByID(projectID uuid.UUID) (*models.Project
                -- Assigned to details
                at_pm.id, at_u.id, at_u.name, at_u.email, at_pm.role, at_pm.joined_at
         FROM tasks t
-        LEFT JOIN project_members cb_pm ON t.created_by = cb_pm.id
+        LEFT JOIN project_members cb_pm ON t.created_by = cb_pm.id 
         LEFT JOIN users cb_u ON cb_pm.user_id = cb_u.id
         LEFT JOIN project_members ub_pm ON t.updated_by = ub_pm.id
         LEFT JOIN users ub_u ON ub_pm.user_id = ub_u.id
@@ -180,7 +183,7 @@ func (r *projectRepository) GetProjectByID(projectID uuid.UUID) (*models.Project
 				UserID:   createdByUserUUID,
 				Name:     createdByName.String,
 				Email:    createdByEmail.String,
-				Role:     models.ProjectRole(createdByRole.String),
+				Role:     models.ProjectMemberRole(createdByRole.String),
 				JoinedAt: createdByJoined.String,
 			}
 		}
@@ -200,7 +203,7 @@ func (r *projectRepository) GetProjectByID(projectID uuid.UUID) (*models.Project
 				UserID:   updatedByUserUUID,
 				Name:     updatedByName.String,
 				Email:    updatedByEmail.String,
-				Role:     models.ProjectRole(updatedByRole.String),
+				Role:     models.ProjectMemberRole(updatedByRole.String),
 				JoinedAt: updatedByJoined.String,
 			}
 		}
@@ -222,7 +225,7 @@ func (r *projectRepository) GetProjectByID(projectID uuid.UUID) (*models.Project
 				UserID:   assignedToUserUUID,
 				Name:     assignedToName.String,
 				Email:    assignedToEmail.String,
-				Role:     models.ProjectRole(assignedToRole.String),
+				Role:     models.ProjectMemberRole(assignedToRole.String),
 				JoinedAt: assignedToJoined.String,
 			}
 		}
@@ -246,6 +249,7 @@ func (r *projectRepository) GetAllProjectsForUser(userID uuid.UUID) ([]models.Pr
         JOIN project_members pm ON p.id = pm.project_id
 		JOIN users u ON p.created_by = u.id											
         WHERE pm.user_id = $1
+		AND pm.status = 'active'
     `
 
 	rows, err := r.db.Query(queryString, userID)
@@ -271,6 +275,29 @@ func (r *projectRepository) GetAllProjectsForUser(userID uuid.UUID) ([]models.Pr
 	return projects, nil
 }
 
-// func (r *projectRepository) JoinProject(userID uuid.UUID, projectID uuid.UUID) error {
+func (r *projectRepository) GetProjectName(projectID uuid.UUID) (string, error) {
+	queryString := `
+		SELECT name FROM projects WHERE id = $1
+	`
 
-// }
+	var name string
+	err := r.db.QueryRow(queryString, projectID).Scan(&name)
+	if err != nil {
+		return "", err
+	}
+
+	return name, nil
+}
+
+func (r *projectRepository) EditProject(projectID uuid.UUID, projectDTO *models.UpdateProjectDTO) error {
+	queryString := `
+		UPDATE projects
+		SET name = $1,
+			description = $2
+		WHERE id = $3
+	`
+
+	_, err := r.db.Exec(queryString, projectDTO.Name, projectDTO.Description, projectID)
+
+	return err
+}

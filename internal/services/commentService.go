@@ -108,7 +108,7 @@ func (s *commentService) GetAllCommentsForTask(taskID uuid.UUID, projectID uuid.
 
 	if err != nil {
 		log.Println("Failed to get Comments. Only projects members can access comments", err)
-		return nil, errors.New("Failed to get Comments. Only projects members can access comments")
+		return nil, errors.New("failed to get Comments. Only projects members can access comments")
 	}
 
 	return s.commentRepository.GetAllCommentsForTask(taskID)

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"errors"
 	"log"
 	"strings"
@@ -12,8 +13,14 @@ import (
 
 type ProjectService interface {
 	CreateProject(projectDTO *models.CreateProjectDTO, firebaseUID string) error
-	GetProjectByID(uuid.UUID) (*models.ProjectResponseDTO, error)
+	GetProjectByID(uuid.UUID, string) (*models.ProjectResponseDTO, error)
 	GetAllProjectsForUser(firebaseUID string) ([]models.ProjectResponseDTO, error)
+	UpdateProject(firebaseUID string, projectID uuid.UUID, projectDTO *models.UpdateProjectDTO) error
+
+	GetProjectName(projectID uuid.UUID) (string, error)
+
+	LeaveProject(projectID uuid.UUID, firebaseUID string) error
+	JoinProject(projectID uuid.UUID, firebaseUID string) error
 	// JoinProject(firebaseUID string, projectID uuid.UUID) error
 }
 
@@ -32,7 +39,6 @@ func (s *projectService) CreateProject(projectDTO *models.CreateProjectDTO, fire
 	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
 
 	if err != nil {
-		log.Println("UserID not found: ", err)
 		return errors.New("UserID not found: " + err.Error())
 	}
 
@@ -57,7 +63,7 @@ func (s *projectService) CreateProject(projectDTO *models.CreateProjectDTO, fire
 	projectMemberDTO := &models.CreateProjectMemberDTO{
 		UserID:    userID,
 		ProjectID: projectID,
-		Role:      models.Owner,
+		Role:      models.RoleOwner,
 	}
 
 	_, err = s.projectMemberService.CreateProjectMemberTx(tx, projectMemberDTO)
@@ -76,8 +82,25 @@ func (s *projectService) CreateProject(projectDTO *models.CreateProjectDTO, fire
 	return nil
 }
 
-// TODO: Add verification so that only the project members can access it
-func (s *projectService) GetProjectByID(projectID uuid.UUID) (*models.ProjectResponseDTO, error) {
+func (s *projectService) GetProjectByID(projectID uuid.UUID, firebaseUID string) (*models.ProjectResponseDTO, error) {
+
+	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	if err != nil {
+		log.Println("UserID not found: ", err)
+		return nil, errors.New("UserID not found: " + err.Error())
+	}
+
+	projectMember, err := s.projectMemberService.GetProjectMember(userID, projectID)
+	if err != nil {
+		log.Println("Not a project member: ", err)
+		return nil, errors.New("not a project member: " + err.Error())
+	}
+
+	if projectMember.Status == string(models.StatusInactive) {
+		log.Println("Project member is inactive")
+		return nil, errors.New("project member is inactive")
+	}
+
 	return s.projectRepository.GetProjectByID(projectID)
 }
 
@@ -93,14 +116,54 @@ func (s *projectService) GetAllProjectsForUser(firebaseUID string) ([]models.Pro
 	return s.projectRepository.GetAllProjectsForUser(userID)
 }
 
-// TODO: Modify this so only the invited users can access it
-// func (s *projectService) JoinProject(firebaseUID string, projectID uuid.UUID) error {
-// 	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+func (s *projectService) GetProjectName(projectID uuid.UUID) (string, error) {
+	return s.projectRepository.GetProjectName(projectID)
+}
 
-// 	if err != nil {
-// 		log.Println("UserID not found: ", err)
-// 		return errors.New("UserID not found: " + err.Error())
-// 	}
+func (s *projectService) UpdateProject(firebaseUID string, projectID uuid.UUID, projectDTO *models.UpdateProjectDTO) error {
+	return s.projectRepository.EditProject(projectID, projectDTO)
+}
 
-// 	return nil
-// }
+func (s *projectService) JoinProject(projectID uuid.UUID, firebaseUID string) error {
+
+	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	if err != nil {
+		return err
+	}
+
+	projectMember, err := s.projectMemberService.GetProjectMember(userID, projectID)
+	if err != nil {
+
+		if errors.Is(err, sql.ErrNoRows) {
+			var projectMemberDTO models.CreateProjectMemberDTO
+			projectMemberDTO.ProjectID = projectID
+			projectMemberDTO.Role = models.RoleViewer
+
+			return s.projectMemberService.CreateProjectMember(&projectMemberDTO, firebaseUID)
+		}
+
+		return err
+
+	}
+
+	if projectMember.Status == string(models.StatusActive) {
+		return errors.New("already an active project member")
+	}
+
+	return s.projectMemberService.UpdateProjectMemberStatus(projectMember.ID, models.StatusActive)
+}
+
+func (s *projectService) LeaveProject(projectID uuid.UUID, firebaseUID string) error {
+
+	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	if err != nil {
+		return err
+	}
+
+	projectMemberID, err := s.projectMemberService.GetProjectMemberID(userID, projectID)
+	if err != nil {
+		return err
+	}
+
+	return s.projectMemberService.UpdateProjectMemberStatus(projectMemberID, models.StatusInactive)
+}

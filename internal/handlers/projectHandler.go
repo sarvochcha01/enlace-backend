@@ -49,6 +49,13 @@ func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
 
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized: ", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	projectID := chi.URLParam(r, "projectID")
 
 	parsedProjectID, err := uuid.Parse(projectID)
@@ -59,7 +66,7 @@ func (h *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	project, err := h.projectService.GetProjectByID(parsedProjectID)
+	project, err := h.projectService.GetProjectByID(parsedProjectID, user.UID)
 
 	if err != nil {
 		http.Error(w, "Project not found", http.StatusNotFound)
@@ -69,6 +76,38 @@ func (h *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(project)
 
+}
+
+func (h *ProjectHandler) GetProjectName(w http.ResponseWriter, r *http.Request) {
+	_, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized: ", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	projectID := chi.URLParam(r, "projectID")
+
+	parsedProjectID, err := uuid.Parse(projectID)
+
+	if err != nil {
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
+		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
+		return
+	}
+
+	var projectNameResponse struct {
+		Name string `json:"projectName"`
+	}
+	projectNameResponse.Name, err = h.projectService.GetProjectName(parsedProjectID)
+
+	if err != nil {
+		log.Println("Failed to get project name: ", err)
+		http.Error(w, "Failed to get project", http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(projectNameResponse)
 }
 
 func (h *ProjectHandler) GetAllProjectsForUser(w http.ResponseWriter, r *http.Request) {
@@ -96,4 +135,99 @@ func (h *ProjectHandler) GetAllProjectsForUser(w http.ResponseWriter, r *http.Re
 		log.Println("Failed to encode response: ", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
+}
+
+func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
+
+	projectID := chi.URLParam(r, "projectID")
+
+	parsedProjectID, err := uuid.Parse(projectID)
+	if err != nil {
+		log.Println("Invalid project ID:", err)
+		http.Error(w, "Invalid projedt ID", http.StatusBadRequest)
+		return
+	}
+
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized:", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var updateProjectDTO models.UpdateProjectDTO
+	if err = json.NewDecoder(r.Body).Decode(&updateProjectDTO); err != nil {
+		log.Println("Invalid request body: ", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err = h.projectService.UpdateProject(user.UID, parsedProjectID, &updateProjectDTO); err != nil {
+		log.Println("Failed to create project: ", err)
+		http.Error(w, "Failed to create project", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Project updated successfully"))
+
+}
+
+func (h *ProjectHandler) JoinProject(w http.ResponseWriter, r *http.Request) {
+
+	projectID := chi.URLParam(r, "projectID")
+	parsedProjectID, err := uuid.Parse(projectID)
+	if err != nil {
+		log.Println("Invalid project id:", err)
+		http.Error(w, "Invalid project id", http.StatusBadRequest)
+		return
+	}
+
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized: ", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = h.projectService.JoinProject(parsedProjectID, user.UID)
+	if err != nil {
+		log.Println("Failed to join project:", err)
+		http.Error(w, "Failed to join project", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Project joined successfully"))
+
+}
+
+func (h *ProjectHandler) LeaveProject(w http.ResponseWriter, r *http.Request) {
+
+	projectID := chi.URLParam(r, "projectID")
+
+	parsedProjectID, err := uuid.Parse(projectID)
+	if err != nil {
+		log.Println("Invalid project ID:", err)
+		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+		return
+	}
+
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized:", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = h.projectService.LeaveProject(parsedProjectID, user.UID)
+	if err != nil {
+		log.Println("Failed to leave project: ", err)
+		http.Error(w, "Failed to leave project", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Project left successfully"))
+
 }

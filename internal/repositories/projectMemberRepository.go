@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/sarvochcha01/enlace-backend/internal/models"
@@ -12,6 +11,8 @@ type ProjectMemberRepository interface {
 	CreateProjectMember(*models.CreateProjectMemberDTO) error
 	CreateProjectMemberTx(*sql.Tx, *models.CreateProjectMemberDTO) (uuid.UUID, error)
 	GetProjectMemberID(uuid.UUID, uuid.UUID) (uuid.UUID, error)
+	UpdateProjectMemberStatus(uuid.UUID, models.ProjectMemberStatus) error
+	GetProjectMember(userID uuid.UUID, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error)
 }
 
 type projectMemberRepository struct {
@@ -52,7 +53,32 @@ func (r *projectMemberRepository) CreateProjectMemberTx(tx *sql.Tx, projectMembe
 	return newID, nil
 }
 
-func (s *projectMemberRepository) GetProjectMemberID(userID uuid.UUID, projectID uuid.UUID) (uuid.UUID, error) {
+func (r *projectMemberRepository) GetProjectMember(userID uuid.UUID, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error) {
+
+	var projectMember models.ProjectMemberResponseDTO
+
+	queryString := `
+		SELECT id, user_id, project_id, role, joined_at, status
+		FROM project_members
+		WHERE user_id = $1 AND project_id = $2
+	`
+
+	err := r.db.QueryRow(queryString, userID, projectID).Scan(
+		&projectMember.ID,
+		&projectMember.UserID,
+		&projectMember.ProjectID,
+		&projectMember.Role,
+		&projectMember.JoinedAt,
+		&projectMember.Status)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &projectMember, nil
+}
+
+func (r *projectMemberRepository) GetProjectMemberID(userID uuid.UUID, projectID uuid.UUID) (uuid.UUID, error) {
 
 	var projectMemberID uuid.UUID
 
@@ -61,14 +87,27 @@ func (s *projectMemberRepository) GetProjectMemberID(userID uuid.UUID, projectID
 		WHERE user_id = $1 AND project_id = $2
 	`
 
-	err := s.db.QueryRow(queryString, userID, projectID).Scan(&projectMemberID)
+	err := r.db.QueryRow(queryString, userID, projectID).Scan(&projectMemberID)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return uuid.Nil, fmt.Errorf("no project member found for user %s in project %s", userID, projectID)
-		}
 		return uuid.Nil, err
 	}
 
 	return projectMemberID, nil
+}
+
+func (r *projectMemberRepository) UpdateProjectMemberStatus(projectMemberID uuid.UUID, newStatus models.ProjectMemberStatus) error {
+
+	queryString := `
+		UPDATE project_members
+		SET status = $1
+		WHERE id = $2
+	`
+
+	_, err := r.db.Exec(queryString, newStatus, projectMemberID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"database/sql"
+	"net/http"
 
 	"firebase.google.com/go/auth"
 	"github.com/go-chi/chi/v5"
@@ -35,6 +36,12 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 	authMiddleware := middlewares.NewAuthMiddleware(authClient)
 
 	r.Route("/api/v1", func(api chi.Router) {
+
+		api.Post("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("Server Up"))
+		})
+
 		api.Route("/users", func(r chi.Router) {
 			r.Post("/create", userHandler.CreateUser)
 			r.With(authMiddleware.FirebaseAuthMiddleware).Get("/", userHandler.GetUser)
@@ -45,12 +52,16 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 			r.Post("/", projectHandler.CreateProject)
 			r.Get("/", projectHandler.GetAllProjectsForUser)
 
-			// TODO: Should be handled by projectHandler, not projectMemberHandler
-			r.Post("/join/{projectID}", projectMemberHandler.CreateProjectMember)
-
 			r.Route("/{projectID}", func(r chi.Router) {
 				r.Get("/", projectHandler.GetProjectByID)
+				r.Put("/", projectHandler.UpdateProject)
+
 				r.Get("/project-member", projectMemberHandler.GetProjectMemberID)
+
+				r.Get("/join", projectHandler.GetProjectName)
+				// TODO: Group join and leave, as well as updating the member roles (to be added) owner, editor, viewer into one handler func, such as projectHandler.UpdateMember or something
+				r.Post("/join", projectHandler.JoinProject)
+				r.Post("/leave", projectHandler.LeaveProject)
 
 				r.Route("/tasks", func(r chi.Router) {
 					r.Post("/", taskHandler.CreateTask)
