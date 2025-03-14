@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/sarvochcha01/enlace-backend/internal/models"
@@ -324,7 +325,18 @@ func (r *projectRepository) EditProject(projectID uuid.UUID, projectDTO *models.
 		WHERE id = $3
 	`
 
-	_, err := r.db.Exec(queryString, projectDTO.Name, projectDTO.Description, projectID)
+	result, err := r.db.Exec(queryString, projectDTO.Name, projectDTO.Description, projectID)
+	if err != nil {
+		return err
+	}
 
-	return err
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("project not found")
+	}
+
+	return nil
 }
