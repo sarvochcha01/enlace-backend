@@ -49,9 +49,9 @@ func (a *App) Initialise() {
 	a.router = chi.NewRouter()
 
 	a.router.Use(cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},                   // Frontend URL
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Allowed HTTP methods
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},           // Allowed headers
+		AllowedOrigins:   []string{"http://localhost:5173", "https://enlace-frontend.vercel.app"}, // Frontend URL
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},                     // Allowed HTTP methods
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},                               // Allowed headers
 		ExposedHeaders:   []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           300, // Cache preflight for 5 minutes
