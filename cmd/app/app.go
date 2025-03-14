@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 
 	"firebase.google.com/go/auth"
 	"github.com/go-chi/chi/v5"
@@ -28,7 +29,10 @@ func (a *App) Initialise() {
 		log.Fatal("Failed to initialize Firebase Auth: ", err)
 	}
 
-	connStr := "user=postgres password=123456 dbname=enlace sslmode=disable host=localhost port=5431"
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		connStr = "user=postgres password=123456 dbname=enlace sslmode=disable host=localhost port=5431"
+	}
 
 	a.db, err = sql.Open("postgres", connStr)
 
