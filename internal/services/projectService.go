@@ -24,7 +24,6 @@ type ProjectService interface {
 	LeaveProject(projectID uuid.UUID, firebaseUID string) error
 	JoinProject(projectID uuid.UUID, firebaseUID string) error
 	GetProjectCreatorID(projectID uuid.UUID) (uuid.UUID, error)
-	// JoinProject(firebaseUID string, projectID uuid.UUID) error
 }
 
 type projectService struct {
@@ -39,7 +38,7 @@ func NewProjectService(pr repositories.ProjectRepository, us UserService, ps Pro
 
 func (s *projectService) CreateProject(projectDTO *models.CreateProjectDTO, firebaseUID string) error {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 
 	if err != nil {
 		return errors.New("UserID not found: " + err.Error())
@@ -87,7 +86,7 @@ func (s *projectService) CreateProject(projectDTO *models.CreateProjectDTO, fire
 
 func (s *projectService) GetProjectByID(projectID uuid.UUID, firebaseUID string) (*models.ProjectResponseDTO, error) {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		log.Println("UserID not found: ", err)
 		return nil, errors.New("UserID not found: " + err.Error())
@@ -109,7 +108,7 @@ func (s *projectService) GetProjectByID(projectID uuid.UUID, firebaseUID string)
 
 func (s *projectService) GetAllProjectsForUser(firebaseUID string) ([]models.ProjectResponseDTO, error) {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 
 	if err != nil {
 		log.Println("UserID not found: ", err)
@@ -148,7 +147,7 @@ func (s *projectService) EditProject(firebaseUID string, projectID uuid.UUID, pr
 
 func (s *projectService) JoinProject(projectID uuid.UUID, firebaseUID string) error {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		return err
 	}
@@ -177,7 +176,7 @@ func (s *projectService) JoinProject(projectID uuid.UUID, firebaseUID string) er
 
 func (s *projectService) LeaveProject(projectID uuid.UUID, firebaseUID string) error {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		return err
 	}

@@ -31,7 +31,7 @@ func NewCommentService(cr repositories.CommentRepository, us UserService, pms Pr
 
 func (s *commentService) CreateComment(commentDTO *models.CreateCommentDTO, firebaseUID string) error {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 
 	if err != nil {
 		log.Println("UserID not found: ", err)
@@ -57,7 +57,7 @@ func (r *commentService) GetComment(commentID uuid.UUID) (*models.CommentRespons
 
 func (s *commentService) UpdateComment(updateCommentDTO *models.UpdateCommentDTO, firebaseUID string) error {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		return errors.New("user not found")
 	}
@@ -80,7 +80,7 @@ func (s *commentService) UpdateComment(updateCommentDTO *models.UpdateCommentDTO
 }
 
 func (s *commentService) DeleteComment(deleteCommentDTO *models.DeleteCommentDTO, firebaseUID string) error {
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		return fmt.Errorf("user not found: %v", err.Error())
 	}

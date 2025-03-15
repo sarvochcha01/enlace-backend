@@ -75,7 +75,7 @@ func (r *projectRepository) GetProjectByID(projectID uuid.UUID) (*models.Project
 	// Query project members
 	projectDTO.ProjectMembers = []models.ProjectMemberResponseDTO{}
 	membersQuery := `
-        SELECT pm.id, pm.user_id, pm.role, pm.joined_at, u.name, u.email
+        SELECT pm.id, pm.user_id, pm.project_id, pm.role, pm.joined_at, pm.status, u.name, u.email
         FROM project_members pm
         JOIN users u ON pm.user_id = u.id
         WHERE pm.project_id = $1
@@ -89,7 +89,7 @@ func (r *projectRepository) GetProjectByID(projectID uuid.UUID) (*models.Project
 
 	for rows.Next() {
 		var member models.ProjectMemberResponseDTO
-		err := rows.Scan(&member.ID, &member.UserID, &member.Role, &member.JoinedAt, &member.Name, &member.Email)
+		err := rows.Scan(&member.ID, &member.UserID, &member.ProjectID, &member.Role, &member.JoinedAt, &member.Status, &member.Name, &member.Email)
 		if err != nil {
 			return nil, err
 		}
@@ -97,6 +97,31 @@ func (r *projectRepository) GetProjectByID(projectID uuid.UUID) (*models.Project
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	// Query invitations
+	projectDTO.Invitations = []models.InvitationResponseDTO{}
+	invitationsQuery := `
+		SELECT i.id, i.invited_by, i.invited_user_id, i.project_id, i.status, i.created_at, u.name, u.email
+		FROM invitations i
+		LEFT JOIN users u ON u.id = i.invited_user_id
+		WHERE project_id = $1
+	`
+	invitationRows, err := r.db.Query(invitationsQuery, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer invitationRows.Close()
+
+	for invitationRows.Next() {
+		var invitation models.InvitationResponseDTO
+		err := invitationRows.Scan(&invitation.ID, &invitation.InvitedBy, &invitation.InvitedUserID, &invitation.ProjectID, &invitation.Status, &invitation.InvitedAt, &invitation.Name, &invitation.Email)
+		if err != nil {
+			return nil, err
+		}
+
+		projectDTO.Invitations = append(projectDTO.Invitations, invitation)
 	}
 
 	// Query tasks with creator, updater, and assignee details

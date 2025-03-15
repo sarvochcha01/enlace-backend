@@ -35,7 +35,7 @@ func NewProjectMemberService(pr repositories.ProjectMemberRepository, us UserSer
 
 func (s *projectMemberService) CreateProjectMember(createProjectMemberDTO *models.CreateProjectMemberDTO, firebaseUID string) error {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		log.Println("UserID not found: ", err)
 		return errors.New("UserID not found: " + err.Error())
@@ -64,7 +64,7 @@ func (s *projectMemberService) GetProjectMember(projectMemberID uuid.UUID) (*mod
 
 func (s *projectMemberService) GetProjectMemberIDByFirebaseUID(firebaseUID string, projectID uuid.UUID) (uuid.UUID, error) {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		log.Println("Failed to get userID")
 		return uuid.Nil, errors.New("failed to get userID")
@@ -74,7 +74,7 @@ func (s *projectMemberService) GetProjectMemberIDByFirebaseUID(firebaseUID strin
 }
 
 func (s *projectMemberService) GetProjectMemberByFirebaseUID(firebaseUID string, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error) {
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		log.Println("Failed to get userID")
 		return nil, errors.New("failed to get userID")

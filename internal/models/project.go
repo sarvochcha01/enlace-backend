@@ -17,6 +17,7 @@ type ProjectResponseDTO struct {
 	Description    string                     `json:"description"`
 	Key            string                     `json:"key"`
 	CreatedBy      UserResponseDTO            `json:"createdBy"`
+	Invitations    []InvitationResponseDTO    `json:"invitations"`
 	ProjectMembers []ProjectMemberResponseDTO `json:"projectMembers,omitempty"`
 	Tasks          []TaskResponseDTO          `json:"tasks,omitempty"`
 	CreatedAt      string                     `json:"createdAt"`

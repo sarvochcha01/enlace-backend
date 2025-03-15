@@ -33,6 +33,10 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 	commentService := services.NewCommentService(commentRepository, userService, projectMemberService)
 	commentHandler := handlers.NewCommentHandler(commentService)
 
+	invitationRepository := repositories.NewInvitationRepository(db)
+	invitationService := services.NewInvitationService(invitationRepository, userService, projectService)
+	invitationHandler := handlers.NewInvitationHandler(invitationService)
+
 	authMiddleware := middlewares.NewAuthMiddleware(authClient)
 
 	r.Route("/api/v1", func(api chi.Router) {
@@ -45,6 +49,8 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 		api.Route("/users", func(r chi.Router) {
 			r.Post("/create", userHandler.CreateUser)
 			r.With(authMiddleware.FirebaseAuthMiddleware).Get("/", userHandler.GetUser)
+			r.With(authMiddleware.FirebaseAuthMiddleware).Post("/search", userHandler.SearchUsers)
+
 		})
 
 		api.Route("/projects", func(r chi.Router) {
@@ -89,6 +95,17 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 					})
 
 				})
+			})
+		})
+
+		// Need to complete GetInvitations
+		api.Route("/invitations", func(r chi.Router) {
+			r.Use(authMiddleware.FirebaseAuthMiddleware)
+			r.Post("/", invitationHandler.CreateInvitation)
+			r.Get("/", invitationHandler.GetInvitations)
+
+			r.Route("/{invitationID}", func(r chi.Router) {
+				r.Put("/", invitationHandler.EditInvitation)
 			})
 		})
 

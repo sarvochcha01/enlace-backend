@@ -28,7 +28,7 @@ func NewTaskService(tr repositories.TaskRepository, us UserService, pms ProjectM
 
 func (s *taskService) CreateTask(taskDTO *models.CreateTaskDTO, firebaseUID string) (uuid.UUID, error) {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 
 	if err != nil {
 		log.Println("UserID not found: ", err)
@@ -56,7 +56,7 @@ func (s *taskService) GetTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO, er
 
 func (s *taskService) EditTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUID string, updateTaskDTO *models.UpdateTaskDTO) error {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		return errors.New("user not found")
 	}
@@ -74,7 +74,7 @@ func (s *taskService) EditTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUI
 // TODO: Add logic so that the project owners and editors can delete it too
 func (s *taskService) DeleteTask(deleteTaskDTO *models.DeleteTaskDTO) error {
 
-	userID, err := s.userService.FindUserIDByFirebaseUID(deleteTaskDTO.FirebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(deleteTaskDTO.FirebaseUID)
 	if err != nil {
 		log.Println("Failed to get UserID from firebaseUID")
 		return errors.New("failted to  get UserID from firebaseUID")

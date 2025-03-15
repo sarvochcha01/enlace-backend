@@ -10,8 +10,9 @@ import (
 
 type UserRepository interface {
 	CreateUser(userDTO *models.CreateUserDTO) error
-	FindUserIDByFirebaseUID(firebaseUID string) (uuid.UUID, error)
+	GetUserIDByFirebaseUID(firebaseUID string) (uuid.UUID, error)
 	GetUserByFirebaseUID(firebaseUID string) (*models.UserResponseDTO, error)
+	SearchUsers(searchQuery string) ([]models.UserResponseDTO, error)
 }
 
 type userRepository struct {
@@ -34,7 +35,7 @@ func (r *userRepository) CreateUser(userDTO *models.CreateUserDTO) error {
 	return nil
 }
 
-func (r *userRepository) FindUserIDByFirebaseUID(firebaseUID string) (uuid.UUID, error) {
+func (r *userRepository) GetUserIDByFirebaseUID(firebaseUID string) (uuid.UUID, error) {
 	var userID uuid.UUID
 	query := "SELECT id FROM users WHERE firebase_uid = $1"
 
@@ -61,4 +62,38 @@ func (r *userRepository) GetUserByFirebaseUID(firebaseUID string) (*models.UserR
 	}
 
 	return &user, nil
+}
+
+func (r *userRepository) SearchUsers(searchQuery string) ([]models.UserResponseDTO, error) {
+
+	queryString := `
+		SELECT id, email, name
+		FROM users
+		WHERE email ILIKE $1 OR name ILIKE $1
+		ORDER BY name ASC
+		LIMIT 5
+	`
+
+	rows, err := r.db.Query(queryString, "%"+searchQuery+"%")
+	if err != nil {
+		return nil, errors.New("failed to search users")
+	}
+
+	defer rows.Close()
+
+	users := []models.UserResponseDTO{}
+	for rows.Next() {
+		var user models.UserResponseDTO
+		if err := rows.Scan(&user.ID, &user.Email, &user.Name); err != nil {
+			return nil, errors.New("error scanning user data")
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, errors.New("error iterating over search results")
+	}
+
+	return users, nil
+
 }

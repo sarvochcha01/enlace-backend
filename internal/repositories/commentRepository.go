@@ -36,11 +36,7 @@ func (r *commentRepository) CreateComment(commentDTO *models.CreateCommentDTO) e
 
 	_, err := r.db.Exec(queryString, commentDTO.ProjectID, commentDTO.TaskID, commentDTO.CreatedBy, commentDTO.Comment)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (r *commentRepository) GetComment(commentID uuid.UUID) (*models.CommentResponseDTO, error) {
