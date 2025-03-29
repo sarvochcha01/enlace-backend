@@ -10,12 +10,22 @@ import (
 	"github.com/sarvochcha01/enlace-backend/internal/middlewares"
 	"github.com/sarvochcha01/enlace-backend/internal/repositories"
 	"github.com/sarvochcha01/enlace-backend/internal/services"
+	"github.com/sarvochcha01/enlace-backend/internal/websockets"
 )
 
 func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
+
 	userRepository := repositories.NewUserRepository(db)
 	userService := services.NewUserService(userRepository)
 	userHandler := handlers.NewUserHandler(userService)
+
+	wsHub := websockets.NewWebSocketHub(authClient)
+	wsHub.SetUserFinder(userService)
+	go wsHub.Run()
+
+	notificationRepository := repositories.NewNotificationRepository(db)
+	notificationService := services.NewNotificationService(notificationRepository, wsHub, userService)
+	notificationHandler := handlers.NewNotificationHandler(notificationService, userService)
 
 	projectMemberRepository := repositories.NewProjectMemberRepository(db)
 	projectMemberService := services.NewProjectMemberService(projectMemberRepository, userService)
@@ -26,7 +36,7 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 	projectHandler := handlers.NewProjectHandler(projectService)
 
 	taskRepository := repositories.NewTaskRepository(db)
-	taskService := services.NewTaskService(taskRepository, userService, projectMemberService)
+	taskService := services.NewTaskService(taskRepository, userService, projectMemberService, notificationService)
 	taskHandler := handlers.NewTaskHandler(taskService)
 
 	commentRepository := repositories.NewCommentRepository(db)
@@ -34,7 +44,7 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 	commentHandler := handlers.NewCommentHandler(commentService)
 
 	invitationRepository := repositories.NewInvitationRepository(db)
-	invitationService := services.NewInvitationService(invitationRepository, userService, projectService)
+	invitationService := services.NewInvitationService(invitationRepository, userService, projectService, projectMemberService)
 	invitationHandler := handlers.NewInvitationHandler(invitationService)
 
 	authMiddleware := middlewares.NewAuthMiddleware(authClient)
@@ -98,7 +108,6 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 			})
 		})
 
-		// Need to complete GetInvitations
 		api.Route("/invitations", func(r chi.Router) {
 			r.Use(authMiddleware.FirebaseAuthMiddleware)
 			r.Post("/", invitationHandler.CreateInvitation)
@@ -109,5 +118,15 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 			})
 		})
 
+		api.Route("/notifications", func(r chi.Router) {
+
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.FirebaseAuthMiddleware)
+				r.Get("/", notificationHandler.GetAllNotificationsForUser)
+				r.Post("/{notificationID}/read", notificationHandler.MarkNotificationAsRead)
+			})
+
+			r.Get("/ws", wsHub.HandleWebSocket)
+		})
 	})
 }

@@ -14,6 +14,7 @@ import (
 type ProjectMemberService interface {
 	CreateProjectMember(createProjectMemberDTO *models.CreateProjectMemberDTO, firebaseUID string) error
 	CreateProjectMemberTx(*sql.Tx, *models.CreateProjectMemberDTO) (uuid.UUID, error)
+	GetUserID(projectMemberID uuid.UUID) (uuid.UUID, error)
 	GetProjectMemberID(userID uuid.UUID, projectID uuid.UUID) (uuid.UUID, error)
 	GetProjectMemberIDByFirebaseUID(firebaseUID string, projectID uuid.UUID) (uuid.UUID, error)
 	GetProjectMemberByFirebaseUID(firebaseUID string, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error)
@@ -52,6 +53,10 @@ func (s *projectMemberService) CreateProjectMemberTx(tx *sql.Tx, createProjectMe
 
 func (s *projectMemberService) GetProjectMemberByUserID(userID uuid.UUID, projectID uuid.UUID) (*models.ProjectMemberResponseDTO, error) {
 	return s.projectMemberRepository.GetProjectMemberByUserID(userID, projectID)
+}
+
+func (s *projectMemberService) GetUserID(projectMemberID uuid.UUID) (uuid.UUID, error) {
+	return s.projectMemberRepository.GetUserID(projectMemberID)
 }
 
 func (s *projectMemberService) GetProjectMemberID(userID uuid.UUID, projectID uuid.UUID) (uuid.UUID, error) {

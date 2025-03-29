@@ -59,17 +59,31 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
+
+	projectID := chi.URLParam(r, "projectID")
+	parsedProjectID, err := uuid.Parse(projectID)
+	if err != nil {
+		log.Println("Invalid project ID (must be a valid UUID): ", err)
+		http.Error(w, "Invalid project ID (must be a valid UUID)", http.StatusBadRequest)
+		return
+	}
+
 	taskID := chi.URLParam(r, "taskID")
-
 	parsedTaskID, err := uuid.Parse(taskID)
-
 	if err != nil {
 		log.Println("Invalid task ID (must be a valid UUID): ", err)
 		http.Error(w, "Invalid task ID (must be a valid UUID)", http.StatusBadRequest)
 		return
 	}
 
-	task, err := h.taskService.GetTaskByID(parsedTaskID)
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized:", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	task, err := h.taskService.GetTaskByID(user.UID, parsedProjectID, parsedTaskID)
 
 	if err != nil {
 		http.Error(w, "Task not found", http.StatusNotFound)

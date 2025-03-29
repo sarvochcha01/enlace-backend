@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sarvochcha01/enlace-backend/internal/models"
 	"github.com/sarvochcha01/enlace-backend/internal/repositories"
-	"github.com/sarvochcha01/enlace-backend/internal/utils"
 )
 
 type ProjectService interface {
@@ -128,20 +127,39 @@ func (s *projectService) GetProjectCreatorID(projectID uuid.UUID) (uuid.UUID, er
 
 func (s *projectService) DeleteProject(firebaseUID string, projectID uuid.UUID) error {
 
-	projectMember, err := s.projectMemberService.GetProjectMemberByFirebaseUID(firebaseUID, projectID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		return err
 	}
 
-	if !utils.HasDeletePrivilege(projectMember) {
-		return errors.New("only owners an delete the project")
+	creatorID, err := s.GetProjectCreatorID(projectID)
+	if err != nil {
+		return nil
+	}
+
+	if userID != creatorID {
+		return errors.New("only the project creator can delete the project")
 	}
 
 	return s.projectRepository.DeleteProject(projectID)
 }
 
-// TODO: Only owner and editor should be able to edit the project
 func (s *projectService) EditProject(firebaseUID string, projectID uuid.UUID, projectDTO *models.EditProjectDTO) error {
+
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
+	if err != nil {
+		return err
+	}
+
+	projectCreatorID, err := s.GetProjectCreatorID(projectID)
+	if err != nil {
+		return err
+	}
+
+	if userID != projectCreatorID {
+		return errors.New("only project creator can edit project")
+	}
+
 	return s.projectRepository.EditProject(projectID, projectDTO)
 }
 
@@ -179,6 +197,15 @@ func (s *projectService) LeaveProject(projectID uuid.UUID, firebaseUID string) e
 	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		return err
+	}
+
+	creatorID, err := s.GetProjectCreatorID(projectID)
+	if err != nil {
+		return nil
+	}
+
+	if userID == creatorID {
+		return errors.New("project creator can't leave the project")
 	}
 
 	projectMemberID, err := s.projectMemberService.GetProjectMemberID(userID, projectID)

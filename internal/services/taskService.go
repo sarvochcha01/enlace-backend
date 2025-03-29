@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/google/uuid"
@@ -11,7 +12,7 @@ import (
 
 type TaskService interface {
 	CreateTask(taskDTo *models.CreateTaskDTO, firebaseUID string) (uuid.UUID, error)
-	GetTaskByID(uuid.UUID) (*models.TaskResponseDTO, error)
+	GetTaskByID(fireabseUID string, projectID uuid.UUID, taskID uuid.UUID) (*models.TaskResponseDTO, error)
 	EditTask(uuid.UUID, uuid.UUID, string, *models.UpdateTaskDTO) error
 	DeleteTask(*models.DeleteTaskDTO) error
 }
@@ -20,10 +21,11 @@ type taskService struct {
 	taskRepository       repositories.TaskRepository
 	userService          UserService
 	projectMemberService ProjectMemberService
+	notificationService  NotificationService
 }
 
-func NewTaskService(tr repositories.TaskRepository, us UserService, pms ProjectMemberService) TaskService {
-	return &taskService{taskRepository: tr, userService: us, projectMemberService: pms}
+func NewTaskService(tr repositories.TaskRepository, us UserService, pms ProjectMemberService, ns NotificationService) TaskService {
+	return &taskService{taskRepository: tr, userService: us, projectMemberService: pms, notificationService: ns}
 }
 
 func (s *taskService) CreateTask(taskDTO *models.CreateTaskDTO, firebaseUID string) (uuid.UUID, error) {
@@ -49,8 +51,15 @@ func (s *taskService) CreateTask(taskDTO *models.CreateTaskDTO, firebaseUID stri
 	return s.taskRepository.CreateTask(taskDTO)
 }
 
-// TODO: Add verification so only the project members can access it
-func (s *taskService) GetTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO, error) {
+func (s *taskService) GetTaskByID(firebaseUID string, projectID uuid.UUID, taskID uuid.UUID) (*models.TaskResponseDTO, error) {
+	_, err := s.projectMemberService.GetProjectMemberByFirebaseUID(firebaseUID, projectID)
+	if err != nil {
+		return nil, nil
+	}
+	return s.taskRepository.GetTaskByID(taskID)
+}
+
+func (s *taskService) GetTaskByIDNoAuth(taskID uuid.UUID) (*models.TaskResponseDTO, error) {
 	return s.taskRepository.GetTaskByID(taskID)
 }
 
@@ -65,39 +74,45 @@ func (s *taskService) EditTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUI
 	if err != nil {
 		return errors.New("Project Member not found: " + err.Error())
 	}
-
 	updateTaskDTO.UpdatedBy = projectMemberID
+
+	if updateTaskDTO.AssignedTo != nil {
+		var assignedToUserID uuid.UUID
+
+		assignedToUserID, err = s.projectMemberService.GetUserID(*updateTaskDTO.AssignedTo)
+		if err == nil {
+			notification := &models.CreateNotificationDTO{
+				UserID:    assignedToUserID,
+				Type:      models.NotificationTypeTaskAssigned,
+				Content:   fmt.Sprintf("You have been assigned to task: %s", updateTaskDTO.Title),
+				ProjectID: projectID,
+				TaskID:    taskID,
+			}
+			err = s.notificationService.CreateNotification(*notification)
+			if err != nil {
+				fmt.Println("Failed to create notification:", err)
+			}
+		}
+
+	}
 
 	return s.taskRepository.EditTask(taskID, updateTaskDTO)
 }
 
-// TODO: Add logic so that the project owners and editors can delete it too
 func (s *taskService) DeleteTask(deleteTaskDTO *models.DeleteTaskDTO) error {
 
-	userID, err := s.userService.GetUserIDByFirebaseUID(deleteTaskDTO.FirebaseUID)
+	projectMember, err := s.projectMemberService.GetProjectMemberByFirebaseUID(deleteTaskDTO.FirebaseUID, deleteTaskDTO.ProjectID)
 	if err != nil {
-		log.Println("Failed to get UserID from firebaseUID")
-		return errors.New("failted to  get UserID from firebaseUID")
+		return errors.New("failed to get project member")
 	}
 
-	projectMemberID, err := s.projectMemberService.GetProjectMemberID(userID, deleteTaskDTO.ProjectID)
+	task, err := s.GetTaskByIDNoAuth(deleteTaskDTO.TaskID)
 	if err != nil {
-		log.Println("Failed to get project member id")
-		return errors.New("failed to get project member id")
-	}
-
-	var taskResponseDTO *models.TaskResponseDTO
-	taskResponseDTO, err = s.GetTaskByID(deleteTaskDTO.TaskID)
-	if err != nil {
-		log.Println("Failed to get task")
 		return errors.New("failed to get task")
 	}
 
-	if taskResponseDTO.CreatedBy.ID == projectMemberID {
-		return s.taskRepository.DeleteTask(deleteTaskDTO.TaskID)
-	} else {
-		log.Println("Not the creator of comment. failed to delete")
-		return errors.New("not the creator of comment. failed to delete")
+	if projectMember.Role != models.RoleOwner && task.CreatedBy.ID != projectMember.ID {
+		return errors.New("only the owner or task creator can delete this task")
 	}
-
+	return s.taskRepository.DeleteTask(deleteTaskDTO.TaskID)
 }

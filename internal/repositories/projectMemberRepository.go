@@ -10,6 +10,7 @@ import (
 type ProjectMemberRepository interface {
 	CreateProjectMember(*models.CreateProjectMemberDTO) error
 	CreateProjectMemberTx(*sql.Tx, *models.CreateProjectMemberDTO) (uuid.UUID, error)
+	GetUserID(projectMemberID uuid.UUID) (uuid.UUID, error)
 	GetProjectMemberID(uuid.UUID, uuid.UUID) (uuid.UUID, error)
 	GetProjectMember(uuid.UUID) (*models.ProjectMemberResponseDTO, error)
 	UpdateProjectMemberStatus(uuid.UUID, models.ProjectMemberStatus) error
@@ -103,6 +104,25 @@ func (r *projectMemberRepository) GetProjectMember(projectMemberID uuid.UUID) (*
 	}
 
 	return &projectMember, nil
+}
+
+func (r *projectMemberRepository) GetUserID(projectMemberID uuid.UUID) (uuid.UUID, error) {
+
+	var userID uuid.UUID
+
+	queryString := `
+		SELECT user_id FROM project_members
+		WHERE id = $1
+	`
+
+	err := r.db.QueryRow(queryString, projectMemberID).Scan(&userID)
+
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return userID, nil
+
 }
 
 func (r *projectMemberRepository) GetProjectMemberID(userID uuid.UUID, projectID uuid.UUID) (uuid.UUID, error) {

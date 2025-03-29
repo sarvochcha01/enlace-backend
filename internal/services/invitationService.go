@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sarvochcha01/enlace-backend/internal/models"
 	"github.com/sarvochcha01/enlace-backend/internal/repositories"
+	"github.com/sarvochcha01/enlace-backend/internal/utils"
 )
 
 type InvitationService interface {
@@ -19,37 +20,47 @@ type invitationService struct {
 	invitationRepository repositories.InvitationRepository
 	userService          UserService
 	projectService       ProjectService
+	projectMemberService ProjectMemberService
 }
 
-func NewInvitationService(ir repositories.InvitationRepository, us UserService, ps ProjectService) InvitationService {
-	return &invitationService{invitationRepository: ir, userService: us, projectService: ps}
+func NewInvitationService(ir repositories.InvitationRepository, us UserService, ps ProjectService, pms ProjectMemberService) InvitationService {
+	return &invitationService{invitationRepository: ir, userService: us, projectService: ps, projectMemberService: pms}
 }
 
-func (r *invitationService) CreateInvitation(firebaseUID string, createInvitationDTO *models.CreateInvitationDTO) error {
+func (s *invitationService) CreateInvitation(firebaseUID string, createInvitationDTO *models.CreateInvitationDTO) error {
 
-	userID, err := r.userService.GetUserIDByFirebaseUID(firebaseUID)
+	user, err := s.userService.GetUserByFirebaseUID(firebaseUID)
 	if err != nil {
 		return err
 	}
 
-	createInvitationDTO.InvitedBy = userID
+	createInvitationDTO.InvitedBy = user.ID
 
-	return r.invitationRepository.CreateInvitation(createInvitationDTO)
+	projectMember, err := s.projectMemberService.GetProjectMemberByFirebaseUID(firebaseUID, createInvitationDTO.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !utils.HasEditPrivileges(projectMember) {
+		return errors.New("you dont have the privileges to invite an user")
+	}
+
+	return s.invitationRepository.CreateInvitation(createInvitationDTO)
 }
 
-func (r *invitationService) GetInvitations(firebaseUID string) ([]models.InvitationResponseDTO, error) {
+func (s *invitationService) GetInvitations(firebaseUID string) ([]models.InvitationResponseDTO, error) {
 
-	userID, err := r.userService.GetUserIDByFirebaseUID(firebaseUID)
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.invitationRepository.GetInvitations(userID)
+	return s.invitationRepository.GetInvitations(userID)
 }
 
-func (r *invitationService) HasInvitation(userID uuid.UUID, projectID uuid.UUID) bool {
+func (s *invitationService) HasInvitation(userID uuid.UUID, projectID uuid.UUID) bool {
 
-	return r.invitationRepository.HasInvitation(userID, projectID)
+	return s.invitationRepository.HasInvitation(userID, projectID)
 }
 
 func (s *invitationService) EditInvitation(firebaseUID string, editInvitationDTO models.EditInvitationDTO) error {
