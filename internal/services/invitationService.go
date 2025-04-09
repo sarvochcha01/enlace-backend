@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/sarvochcha01/enlace-backend/internal/models"
@@ -21,10 +22,11 @@ type invitationService struct {
 	userService          UserService
 	projectService       ProjectService
 	projectMemberService ProjectMemberService
+	notificationService  NotificationService
 }
 
-func NewInvitationService(ir repositories.InvitationRepository, us UserService, ps ProjectService, pms ProjectMemberService) InvitationService {
-	return &invitationService{invitationRepository: ir, userService: us, projectService: ps, projectMemberService: pms}
+func NewInvitationService(ir repositories.InvitationRepository, us UserService, ps ProjectService, pms ProjectMemberService, ns NotificationService) InvitationService {
+	return &invitationService{invitationRepository: ir, userService: us, projectService: ps, projectMemberService: pms, notificationService: ns}
 }
 
 func (s *invitationService) CreateInvitation(firebaseUID string, createInvitationDTO *models.CreateInvitationDTO) error {
@@ -45,7 +47,26 @@ func (s *invitationService) CreateInvitation(firebaseUID string, createInvitatio
 		return errors.New("you dont have the privileges to invite an user")
 	}
 
-	return s.invitationRepository.CreateInvitation(createInvitationDTO)
+	err = s.invitationRepository.CreateInvitation(createInvitationDTO)
+	if err == nil {
+		projectName, err := s.projectService.GetProjectName(createInvitationDTO.ProjectID)
+		if err == nil {
+			notification := &models.CreateNotificationDTO{
+				UserID:    createInvitationDTO.InvitedUserID,
+				Type:      models.NotificationTypeProjectInvitation,
+				Content:   fmt.Sprintf("You have been invited to join the project: %s", projectName),
+				ProjectID: createInvitationDTO.ProjectID,
+				TaskID:    nil,
+			}
+
+			err = s.notificationService.CreateNotification(*notification)
+			if err != nil {
+				fmt.Println("Failed to create notification:", err)
+			}
+		}
+	}
+
+	return err
 }
 
 func (s *invitationService) GetInvitations(firebaseUID string) ([]models.InvitationResponseDTO, error) {

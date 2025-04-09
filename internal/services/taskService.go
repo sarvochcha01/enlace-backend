@@ -86,7 +86,7 @@ func (s *taskService) EditTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUI
 				Type:      models.NotificationTypeTaskAssigned,
 				Content:   fmt.Sprintf("You have been assigned to task: %s", updateTaskDTO.Title),
 				ProjectID: projectID,
-				TaskID:    taskID,
+				TaskID:    &taskID,
 			}
 			err = s.notificationService.CreateNotification(*notification)
 			if err != nil {

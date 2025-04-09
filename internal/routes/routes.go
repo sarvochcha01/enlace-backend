@@ -44,7 +44,7 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 	commentHandler := handlers.NewCommentHandler(commentService)
 
 	invitationRepository := repositories.NewInvitationRepository(db)
-	invitationService := services.NewInvitationService(invitationRepository, userService, projectService, projectMemberService)
+	invitationService := services.NewInvitationService(invitationRepository, userService, projectService, projectMemberService, notificationService)
 	invitationHandler := handlers.NewInvitationHandler(invitationService)
 
 	authMiddleware := middlewares.NewAuthMiddleware(authClient)

@@ -272,12 +272,32 @@ func (r *projectRepository) GetAllProjectsForUser(userID uuid.UUID) ([]models.Pr
 	var projects []models.ProjectResponseDTO
 
 	queryString := `
-        SELECT p.id, p.name, p.description, p.key, u.id, u.name, u.email, p.created_at, p.updated_at
+        SELECT 
+			p.id, 
+			p.name, 
+			p.description, 
+			p.key, 
+			u.id, 
+			u.name, 
+			u.email, 
+			p.created_at, 
+			p.updated_at, 
+			COUNT(t.id) as total_tasks, 
+			COUNT(CASE WHEN t.status = 'completed' THEN 1 END) AS completed_tasks,
+			COUNT(CASE 
+            WHEN t.status IN ('todo', 'in-progress') AND assigned_pm.user_id = $1 
+            THEN 1 
+        END) AS active_tasks_assigned_to_user
         FROM projects p
         JOIN project_members pm ON p.id = pm.project_id
 		JOIN users u ON p.created_by = u.id											
+		LEFT JOIN tasks t ON t.project_id = p.id
+		LEFT JOIN project_members assigned_pm ON t.assigned_to = assigned_pm.id
         WHERE pm.user_id = $1
 		AND pm.status = 'active'
+		GROUP BY 
+            p.id, p.name, p.description, p.key, p.created_at, p.updated_at,
+            u.id, u.name, u.email
     `
 
 	rows, err := r.db.Query(queryString, userID)
@@ -290,7 +310,7 @@ func (r *projectRepository) GetAllProjectsForUser(userID uuid.UUID) ([]models.Pr
 	for rows.Next() {
 		var project models.ProjectResponseDTO
 		var createdBy models.UserResponseDTO
-		err := rows.Scan(&project.ID, &project.Name, &project.Description, &project.Key, &createdBy.ID, &createdBy.Name, &createdBy.Email, &project.CreatedAt, &project.UpdatedAt)
+		err := rows.Scan(&project.ID, &project.Name, &project.Description, &project.Key, &createdBy.ID, &createdBy.Name, &createdBy.Email, &project.CreatedAt, &project.UpdatedAt, &project.TotalTasks, &project.TasksCompleted, &project.ActiveTasksAssignedToUserCount)
 		if err != nil {
 			return nil, err
 		}

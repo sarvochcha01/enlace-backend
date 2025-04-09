@@ -34,5 +34,5 @@ type CreateNotificationDTO struct {
 	Type      NotificationType `json:"type"`
 	Content   string           `json:"content"`
 	ProjectID uuid.UUID        `json:"projectId"`
-	TaskID    uuid.UUID        `json:"taskId"`
+	TaskID    *uuid.UUID       `json:"taskId"`
 }
