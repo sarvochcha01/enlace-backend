@@ -116,6 +116,9 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 			r.Route("/{invitationID}", func(r chi.Router) {
 				r.Put("/", invitationHandler.EditInvitation)
 			})
+
+			// To check if a user is invited to the project or not
+			r.Get("/join-project/{projectID}", invitationHandler.HasInvitation)
 		})
 
 		api.Route("/notifications", func(r chi.Router) {

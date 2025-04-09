@@ -61,9 +61,22 @@ func (r *notificationRepository) GetAllNotificationsForUser(userID uuid.UUID) ([
 	notifications := []models.NotificationResponseDTO{}
 
 	queryString := `
-		SELECT id, user_id, type, content, related_project_id, related_task_id, status, created_at
-		FROM notifications
-		WHERE user_id = $1
+		SELECT 
+			n.id, 
+			n.user_id, 
+			n.type, 
+			n.content, 
+			n.related_project_id, 
+			n.related_task_id, 
+			n.status, 
+			n.created_at,
+			i.id as invitation_id
+		FROM notifications n
+		LEFT JOIN invitations i
+			ON n.type = 'project_invitation' 
+			AND i.project_id = n.related_project_id 
+			AND i.invited_user_id = n.user_id
+		WHERE n.user_id = $1
 		ORDER BY created_at DESC
 	`
 
@@ -84,6 +97,7 @@ func (r *notificationRepository) GetAllNotificationsForUser(userID uuid.UUID) ([
 			&notification.TaskID,
 			&notification.Status,
 			&notification.CreatedAt,
+			&notification.InvitationID,
 		); err != nil {
 			return nil, err
 		}

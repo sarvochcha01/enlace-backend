@@ -14,6 +14,7 @@ type InvitationService interface {
 	CreateInvitation(firebaseUID string, createInvitationDTO *models.CreateInvitationDTO) error
 	GetInvitations(firebaseUID string) ([]models.InvitationResponseDTO, error)
 	HasInvitation(userID uuid.UUID, projectID uuid.UUID) bool
+	HasInvitationFirebaseUID(firebaseUID string, projectID uuid.UUID) bool
 	EditInvitation(firebaseUID string, editInvitationDTO models.EditInvitationDTO) error
 }
 
@@ -80,6 +81,16 @@ func (s *invitationService) GetInvitations(firebaseUID string) ([]models.Invitat
 }
 
 func (s *invitationService) HasInvitation(userID uuid.UUID, projectID uuid.UUID) bool {
+
+	return s.invitationRepository.HasInvitation(userID, projectID)
+}
+
+func (s *invitationService) HasInvitationFirebaseUID(firebaseUID string, projectID uuid.UUID) bool {
+
+	userID, err := s.userService.GetUserIDByFirebaseUID(firebaseUID)
+	if err != nil {
+		return false
+	}
 
 	return s.invitationRepository.HasInvitation(userID, projectID)
 }

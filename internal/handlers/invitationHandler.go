@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -93,6 +94,8 @@ func (h *InvitationHandler) EditInvitation(w http.ResponseWriter, r *http.Reques
 
 	EditInvitationRequest.InvitationID = parsedInvitationID
 
+	fmt.Println(EditInvitationRequest)
+
 	if err = h.invitationService.EditInvitation(user.UID, EditInvitationRequest); err != nil {
 		log.Println("Failed to edit invitation:", err)
 		http.Error(w, "Failed to edit invitation", http.StatusInternalServerError)
@@ -102,4 +105,30 @@ func (h *InvitationHandler) EditInvitation(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Invitation edited successfully"))
 
+}
+
+func (h *InvitationHandler) HasInvitation(w http.ResponseWriter, r *http.Request) {
+
+	projectIDStr := chi.URLParam(r, "projectID")
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		log.Println("Invalid project id:", err)
+		http.Error(w, "Invalid project id", http.StatusBadRequest)
+		return
+	}
+
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized:", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	hasInvitation := h.invitationService.HasInvitationFirebaseUID(user.UID, projectID)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]bool{
+		"hasInvitation": hasInvitation,
+	})
 }

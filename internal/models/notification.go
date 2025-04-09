@@ -19,14 +19,15 @@ const (
 )
 
 type NotificationResponseDTO struct {
-	ID        uuid.UUID          `json:"id"`
-	UserID    uuid.UUID          `json:"userId"`
-	Type      NotificationType   `json:"type"`
-	Content   string             `json:"content"`
-	ProjectID uuid.UUID          `json:"projectId"`
-	TaskID    uuid.UUID          `json:"taskId"`
-	Status    NotificationStatus `json:"status"`
-	CreatedAt time.Time          `json:"createdAt"`
+	ID           uuid.UUID          `json:"id"`
+	UserID       uuid.UUID          `json:"userId"`
+	Type         NotificationType   `json:"type"`
+	Content      string             `json:"content"`
+	ProjectID    uuid.UUID          `json:"projectId"`
+	TaskID       uuid.UUID          `json:"taskId"`
+	InvitationID uuid.UUID          `json:"invitationId"`
+	Status       NotificationStatus `json:"status"`
+	CreatedAt    time.Time          `json:"createdAt"`
 }
 
 type CreateNotificationDTO struct {

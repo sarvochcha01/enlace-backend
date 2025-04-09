@@ -11,6 +11,7 @@ type InivtationStatus string
 const (
 	InivtationStatusPending  InivtationStatus = "pending"
 	InivtationStatusAccepted InivtationStatus = "accepted"
+	InivtationStatusDeclined InivtationStatus = "declined"
 )
 
 type CreateInvitationDTO struct {
