@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sarvochcha01/enlace-backend/internal/models"
 	"github.com/sarvochcha01/enlace-backend/internal/repositories"
+	"github.com/sarvochcha01/enlace-backend/internal/utils"
 )
 
 type TaskService interface {
@@ -37,16 +38,17 @@ func (s *taskService) CreateTask(taskDTO *models.CreateTaskDTO, firebaseUID stri
 		return uuid.Nil, errors.New("UserID not found: " + err.Error())
 	}
 
-	var projectMemberID uuid.UUID
-	projectMemberID, err = s.projectMemberService.GetProjectMemberID(userID, taskDTO.ProjectID)
-
+	projectMember, err := s.projectMemberService.GetProjectMemberByUserID(userID, taskDTO.ProjectID)
 	if err != nil {
-		log.Println("Project Member not found: ", err)
 		return uuid.Nil, errors.New("Project Member not found: " + err.Error())
 	}
 
-	taskDTO.CreatedBy = projectMemberID
-	taskDTO.UpdatedBy = projectMemberID
+	if !utils.HasEditPrivileges(projectMember) {
+		return uuid.Nil, errors.New("no edit privilege")
+	}
+
+	taskDTO.CreatedBy = projectMember.ID
+	taskDTO.UpdatedBy = projectMember.ID
 
 	return s.taskRepository.CreateTask(taskDTO)
 }
@@ -70,27 +72,42 @@ func (s *taskService) EditTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUI
 		return errors.New("user not found")
 	}
 
-	projectMemberID, err := s.projectMemberService.GetProjectMemberID(userID, projectID)
+	projectMember, err := s.projectMemberService.GetProjectMemberByUserID(userID, projectID)
 	if err != nil {
 		return errors.New("Project Member not found: " + err.Error())
 	}
-	updateTaskDTO.UpdatedBy = projectMemberID
+
+	if !utils.HasEditPrivileges(projectMember) {
+		return errors.New("no edit privilege")
+	}
+	updateTaskDTO.UpdatedBy = projectMember.ID
 
 	if updateTaskDTO.AssignedTo != nil {
-		var assignedToUserID uuid.UUID
 
-		assignedToUserID, err = s.projectMemberService.GetUserID(*updateTaskDTO.AssignedTo)
-		if err == nil {
-			notification := &models.CreateNotificationDTO{
-				UserID:    assignedToUserID,
-				Type:      models.NotificationTypeTaskAssigned,
-				Content:   fmt.Sprintf("You have been assigned to task: %s", updateTaskDTO.Title),
-				ProjectID: projectID,
-				TaskID:    &taskID,
-			}
-			err = s.notificationService.CreateNotification(*notification)
-			if err != nil {
-				fmt.Println("Failed to create notification:", err)
+		currentTask, err := s.taskRepository.GetTaskByID(taskID)
+		if err != nil {
+			return errors.New("Failed to get current task: " + err.Error())
+		}
+
+		if currentTask.AssignedTo == nil || currentTask.AssignedTo.ID != *updateTaskDTO.AssignedTo {
+			var assignedToUserID uuid.UUID
+
+			assignedToUserID, err = s.projectMemberService.GetUserID(*updateTaskDTO.AssignedTo)
+
+			if err == nil {
+				if assignedToUserID != userID {
+					notification := &models.CreateNotificationDTO{
+						UserID:    assignedToUserID,
+						Type:      models.NotificationTypeTaskAssigned,
+						Content:   fmt.Sprintf("You have been assigned to task: %s", updateTaskDTO.Title),
+						ProjectID: projectID,
+						TaskID:    &taskID,
+					}
+					err = s.notificationService.CreateNotification(*notification)
+					if err != nil {
+						fmt.Println("Failed to create notification:", err)
+					}
+				}
 			}
 		}
 
@@ -104,6 +121,10 @@ func (s *taskService) DeleteTask(deleteTaskDTO *models.DeleteTaskDTO) error {
 	projectMember, err := s.projectMemberService.GetProjectMemberByFirebaseUID(deleteTaskDTO.FirebaseUID, deleteTaskDTO.ProjectID)
 	if err != nil {
 		return errors.New("failed to get project member")
+	}
+
+	if !utils.HasEditPrivileges(projectMember) {
+		return errors.New("no edit privilege")
 	}
 
 	task, err := s.GetTaskByIDNoAuth(deleteTaskDTO.TaskID)
