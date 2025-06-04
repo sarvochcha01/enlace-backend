@@ -161,7 +161,7 @@ func (r *projectRepository) GetProjectByID(projectID uuid.UUID) (*models.Project
 
 		err := taskRows.Scan(
 			&task.ID,
-			&task.ProjectId,
+			&task.ProjectID,
 			&task.TaskNumber,
 			&task.Title,
 			&task.Description,

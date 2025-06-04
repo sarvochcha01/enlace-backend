@@ -47,6 +47,10 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 	invitationService := services.NewInvitationService(invitationRepository, userService, projectService, projectMemberService, notificationService)
 	invitationHandler := handlers.NewInvitationHandler(invitationService)
 
+	dashboardRepository := repositories.NewDashboardRepository(db)
+	dashboardService := services.NewDashboardService(dashboardRepository, userService)
+	dashboardHandler := handlers.NewDashboardHandler(dashboardService)
+
 	authMiddleware := middlewares.NewAuthMiddleware(authClient)
 
 	r.Route("/api/v1", func(api chi.Router) {
@@ -119,6 +123,13 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 
 			// To check if a user is invited to the project or not
 			r.Get("/join-project/{projectID}", invitationHandler.HasInvitation)
+		})
+
+		api.Route("/dashboard", func(r chi.Router) {
+			r.Use(authMiddleware.FirebaseAuthMiddleware)
+			r.Get("/recently-assigned", dashboardHandler.GetRecentlyAssignedTasks)
+			r.Get("/in-progress", dashboardHandler.GetInProgressTasks)
+			r.Get("/approaching-deadline", dashboardHandler.GetApproachingDeadlineTasks)
 		})
 
 		api.Route("/notifications", func(r chi.Router) {

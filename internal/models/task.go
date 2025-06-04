@@ -36,7 +36,8 @@ type CreateTaskDTO struct {
 
 type TaskResponseDTO struct {
 	ID          uuid.UUID                 `json:"id"`
-	ProjectId   uuid.UUID                 `json:"projectId"`
+	ProjectID   uuid.UUID                 `json:"projectId"`
+	ProjectName string                    `json:"projectName"`
 	CreatedBy   ProjectMemberResponseDTO  `json:"createdBy"`
 	UpdatedBy   ProjectMemberResponseDTO  `json:"updatedBy"`
 	AssignedTo  *ProjectMemberResponseDTO `json:"assignedTo"`

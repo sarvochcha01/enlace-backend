@@ -11,7 +11,7 @@ import (
 
 type TaskRepository interface {
 	CreateTask(*models.CreateTaskDTO) (uuid.UUID, error)
-	GetTaskByID(uuid.UUID) (*models.TaskResponseDTO, error)
+	GetFullTaskByID(uuid.UUID) (*models.TaskResponseDTO, error)
 	EditTask(uuid.UUID, *models.UpdateTaskDTO) error
 	DeleteTask(uuid.UUID) error
 }
@@ -47,7 +47,7 @@ func (r *taskRepository) CreateTask(taskDTO *models.CreateTaskDTO) (uuid.UUID, e
 
 }
 
-func (r *taskRepository) GetTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO, error) {
+func (r *taskRepository) GetFullTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO, error) {
 	var task models.TaskResponseDTO
 	var assignedToID, assignedToUserID sql.NullString
 	var assignedToName, assignedToEmail, assignedToRole sql.NullString
@@ -73,7 +73,7 @@ func (r *taskRepository) GetTaskByID(taskID uuid.UUID) (*models.TaskResponseDTO,
 
 	err := r.db.QueryRow(queryString, taskID).Scan(
 		&task.ID,
-		&task.ProjectId,
+		&task.ProjectID,
 		&task.TaskNumber,
 		&task.Title,
 		&task.Description,

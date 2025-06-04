@@ -58,11 +58,11 @@ func (s *taskService) GetTaskByID(firebaseUID string, projectID uuid.UUID, taskI
 	if err != nil {
 		return nil, nil
 	}
-	return s.taskRepository.GetTaskByID(taskID)
+	return s.taskRepository.GetFullTaskByID(taskID)
 }
 
 func (s *taskService) GetTaskByIDNoAuth(taskID uuid.UUID) (*models.TaskResponseDTO, error) {
-	return s.taskRepository.GetTaskByID(taskID)
+	return s.taskRepository.GetFullTaskByID(taskID)
 }
 
 func (s *taskService) EditTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUID string, updateTaskDTO *models.UpdateTaskDTO) error {
@@ -84,7 +84,7 @@ func (s *taskService) EditTask(taskID uuid.UUID, projectID uuid.UUID, firebaseUI
 
 	if updateTaskDTO.AssignedTo != nil {
 
-		currentTask, err := s.taskRepository.GetTaskByID(taskID)
+		currentTask, err := s.taskRepository.GetFullTaskByID(taskID)
 		if err != nil {
 			return errors.New("Failed to get current task: " + err.Error())
 		}
