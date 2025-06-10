@@ -26,7 +26,9 @@ func (r *dashboardRepository) GetRecentlyAssignedTasks(userID uuid.UUID, limit i
 		SELECT 
 			t.id,
 			t.title, 
+			t.task_number,
 			p.id AS project_id,
+			p.key AS project_key,
 			p.name AS project_name, 
 			t.priority, 
 			t.due_date, 
@@ -47,7 +49,9 @@ func (r *dashboardRepository) GetInProgressTasks(userID uuid.UUID, limit int) ([
 		SELECT 
 			t.id,
 			t.title, 
+			t.task_number,
 			p.id AS project_id,
+			p.key AS project_key,
 			p.name AS project_name, 
 			t.priority, 
 			t.due_date, 
@@ -69,7 +73,9 @@ func (r *dashboardRepository) GetApproachingDeadlineTasks(userID uuid.UUID, limi
 		SELECT 
 			t.id,
 			t.title, 
+			t.task_number,
 			p.id AS project_id,
+			p.key AS project_key,
 			p.name AS project_name, 
 			t.priority, 
 			t.due_date, 
@@ -102,7 +108,9 @@ func (r *dashboardRepository) fetchTasks(query string, userID uuid.UUID, limit i
 		err := rows.Scan(
 			&task.ID,
 			&task.Title,
+			&task.TaskNumber,
 			&task.ProjectID,
+			&task.ProjectKey,
 			&task.ProjectName,
 			&task.Priority,
 			&task.DueDate,
