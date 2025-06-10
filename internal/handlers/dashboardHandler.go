@@ -107,3 +107,33 @@ func (h *DashboardHandler) GetApproachingDeadlineTasks(w http.ResponseWriter, r 
 		http.Error(w, "Failed to encode tasks", http.StatusInternalServerError)
 	}
 }
+
+func (h *DashboardHandler) Search(w http.ResponseWriter, r *http.Request) {
+	user, err := middlewares.GetFirebaseUser(r)
+	if err != nil {
+		log.Println("Unauthorized:", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		log.Println("Query parameter is required")
+		http.Error(w, "Query parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	result, err := h.dashboardService.Search(user.UID, query)
+	if err != nil {
+		log.Println("Failed to search:", err)
+		http.Error(w, "Failed to search", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		log.Println("Failed to encode search result:", err)
+		http.Error(w, "Failed to encode search result", http.StatusInternalServerError)
+	}
+	log.Println("Search completed successfully")
+
+}

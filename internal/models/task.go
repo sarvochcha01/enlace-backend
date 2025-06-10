@@ -35,21 +35,22 @@ type CreateTaskDTO struct {
 }
 
 type TaskResponseDTO struct {
-	ID          uuid.UUID                 `json:"id"`
-	ProjectID   uuid.UUID                 `json:"projectId"`
-	ProjectKey  string                    `json:"projectKey"`
-	ProjectName string                    `json:"projectName"`
-	CreatedBy   ProjectMemberResponseDTO  `json:"createdBy"`
-	UpdatedBy   ProjectMemberResponseDTO  `json:"updatedBy"`
-	AssignedTo  *ProjectMemberResponseDTO `json:"assignedTo"`
-	Title       string                    `json:"title"`
-	TaskNumber  int                       `json:"taskNumber"`
-	Description *string                   `json:"description"`
-	Status      TaskStatus                `json:"status"`
-	Priority    TaskPriority              `json:"priority"`
-	DueDate     *time.Time                `json:"dueDate"`
-	CreatedAt   time.Time                 `json:"createdAt"`
-	UpdatedAt   time.Time                 `json:"updatedAt"`
+	ID             uuid.UUID                 `json:"id"`
+	ProjectID      uuid.UUID                 `json:"projectId"`
+	ProjectKey     string                    `json:"projectKey"`
+	ProjectName    string                    `json:"projectName"`
+	CreatedBy      ProjectMemberResponseDTO  `json:"createdBy"`
+	UpdatedBy      ProjectMemberResponseDTO  `json:"updatedBy"`
+	AssignedTo     *ProjectMemberResponseDTO `json:"assignedTo"`
+	Title          string                    `json:"title"`
+	TaskNumber     int                       `json:"taskNumber"`
+	Description    *string                   `json:"description"`
+	Status         TaskStatus                `json:"status"`
+	Priority       TaskPriority              `json:"priority"`
+	DueDate        *time.Time                `json:"dueDate"`
+	AssignedToName string                    `json:"assignedToName"`
+	CreatedAt      time.Time                 `json:"createdAt"`
+	UpdatedAt      time.Time                 `json:"updatedAt"`
 }
 
 type UpdateTaskDTO struct {

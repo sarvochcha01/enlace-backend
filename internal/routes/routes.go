@@ -130,6 +130,7 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 			r.Get("/recently-assigned", dashboardHandler.GetRecentlyAssignedTasks)
 			r.Get("/in-progress", dashboardHandler.GetInProgressTasks)
 			r.Get("/approaching-deadline", dashboardHandler.GetApproachingDeadlineTasks)
+			r.Get("/search", dashboardHandler.Search)
 		})
 
 		api.Route("/notifications", func(r chi.Router) {
@@ -142,5 +143,6 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 
 			r.Get("/ws", wsHub.HandleWebSocket)
 		})
+
 	})
 }
