@@ -88,7 +88,6 @@ func SetupRoutes(r chi.Router, db *sql.DB, authClient *auth.Client) {
 
 				r.Get("/join", projectHandler.GetProjectName)
 				// TODO: Group join and leave, as well as updating the member roles (to be added) owner, editor, viewer into one handler func, such as projectHandler.UpdateMember or something
-				r.Post("/join", projectHandler.JoinProject)
 				r.Post("/leave", projectHandler.LeaveProject)
 
 				r.Route("/tasks", func(r chi.Router) {
